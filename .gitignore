@@ -1,2 +1,7 @@
+# Python virtual environment
 .venv-stock-server
+# node_modules
 node_modules/
+
+# Stock historical data
+stock_server_v1/data/stock_historical_prices_2019-2024/*.csv
