@@ -10,4 +10,4 @@ stock_server_v1/data/raw data/*.csv
 
 
 # Reddit client data
-stock_server_v1/.reddit_credentials.json
+stock_server_v1/data/.reddit_credentials.json
