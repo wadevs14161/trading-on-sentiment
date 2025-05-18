@@ -1,3 +1,4 @@
+import sys
 import praw
 import json
 import pandas as pd
@@ -19,7 +20,7 @@ reddit = praw.Reddit(
 )
 
 def get_reddit_posts(subreddit_name,
-                     limit=None,
+                     limit=10,
                      start_of_month_epoch=None,
                      end_of_month_epoch=None,
                      currently_earliest_in_file=None):
@@ -38,7 +39,7 @@ def get_reddit_posts(subreddit_name,
     posts = []
     counter = 0
     # Fetch the posts from the subreddit 
-    for submission in subreddit.top(time_filter = "all"):
+    for submission in subreddit.new(limit=limit):
         # Check if the post is within the specified date range
         if start_of_month_epoch and submission.created_utc < start_of_month_epoch:
             continue
@@ -64,8 +65,16 @@ def get_reddit_posts(subreddit_name,
 
 
 if __name__ == "__main__":
-    # Define the target month
-    target_month = "2025-03"
+    # Check if the script is run with the correct number of arguments
+    if len(sys.argv) != 2:
+        print("Usage: python reddit_scraper.py <YYYY-MM>")
+        sys.exit(1)
+    # Get the target month from the command line arguments
+    target_month = sys.argv[1]
+    # Check if the target month is in the correct format
+    if not target_month or len(target_month) != 7 or target_month[4] != "-":
+        print("Error: Target month must be in the format YYYY-MM")
+        sys.exit(1)
 
     # Get the start of the month
     start_of_month = datetime.datetime.strptime(target_month, "%Y-%m").replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -85,7 +94,7 @@ if __name__ == "__main__":
 
     # Get the earliest unix timestamp from the csv file of the target month
     earliest = None
-    file_path = f"raw data/reddit_posts_wallstreetbets_{target_month}.csv"
+    file_path = f"reddit_posts_wallstreetbets_{target_month}.csv"
     # If the csv file exists, read it and get the earliest unix timestamp
     if os.path.exists(file_path):
         df = pd.read_csv(file_path)
@@ -96,9 +105,9 @@ if __name__ == "__main__":
 
     # PRAW
     subreddit_name = "wallstreetbets"
-    # limit = 50000
+    limit = 50000
     posts = get_reddit_posts(subreddit_name=subreddit_name,
-                            # limit=limit,
+                            limit=limit,
                             start_of_month_epoch =start_of_month_epoch,
                             end_of_month_epoch=end_of_month_epoch,
                             currently_earliest_in_file=earliest)
@@ -106,7 +115,7 @@ if __name__ == "__main__":
     # Save the posts to a csv file
     df = pd.DataFrame(posts)
     # Check if the csv file exists, if not create it
-    file_path = f"raw data/reddit_posts_{subreddit_name}_{target_month}.csv"
+    file_path = f"reddit_posts_{subreddit_name}_{target_month}.csv"
     if not os.path.exists(file_path) and len(posts) > 0:
         df.to_csv(file_path, index=False)
         print(f"Created new csv file: {file_path}")
