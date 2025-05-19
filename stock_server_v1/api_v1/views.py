@@ -4,6 +4,7 @@ from rest_framework import status
 from django.db.models import Q
 from .models import StockPriceHistory
 from .Serializers import StockPriceHistorySerializer
+from django.shortcuts import render
 
 class StockPriceHistoryViewSet(viewsets.ViewSet):
     def list(self, request):
@@ -30,3 +31,7 @@ class StockPriceHistoryViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({"error": str(e)},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+def index(request):
+    return render(request, template_name='api_v1/index.html')
