@@ -7,7 +7,8 @@ router.register(r'stock-price-history', StockPriceHistoryViewSet, basename='stoc
 
 urlpatterns = [
     # path('', include(router.urls)),
-    path('', index, name='index'),
+    # path('', index, name='index'),
+    path('', include(router.urls)),
 ]
 
 

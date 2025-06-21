@@ -76,28 +76,28 @@ WSGI_APPLICATION = 'stock_server_v1.wsgi.application'
 
 # Database
 # from db_credential.json import the database credentials
-credential = json.load(open('.db_credential.json'))
+# credential = json.load(open('.db_credential.json'))
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': credential['DB_NAME'],  # Replace with your MariaDB database name
-        'USER': credential['DB_USER'],  # Replace with your MariaDB username
-        'PASSWORD': credential['DB_PASSWORD'],  # Replace with your MariaDB password
-        'HOST': credential['DB_HOST'],                # Replace with your MariaDB host
-        'PORT': credential['DB_PORT'],                # Replace with your MariaDB port
-        'OPTIONS': {
-            'charset': 'utf8mb4',             # Recommended character set
-            'sql_mode': 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION', # Recommended SQL mode
-        },
-    }
-}
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': credential['DB_NAME'],  # Replace with your MariaDB database name
+#         'USER': credential['DB_USER'],  # Replace with your MariaDB username
+#         'PASSWORD': credential['DB_PASSWORD'],  # Replace with your MariaDB password
+#         'HOST': credential['DB_HOST'],                # Replace with your MariaDB host
+#         'PORT': credential['DB_PORT'],                # Replace with your MariaDB port
+#         'OPTIONS': {
+#             'charset': 'utf8mb4',             # Recommended character set
+#             'sql_mode': 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION', # Recommended SQL mode
+#         },
 #     }
 # }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 
 # Password validation
