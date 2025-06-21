@@ -5,6 +5,9 @@ from django.db.models import Q
 from .models import StockPriceHistory
 from .Serializers import StockPriceHistorySerializer
 from django.shortcuts import render
+from .RedditSentimentData import RedditSentimentData
+from django.conf import settings
+import os
 
 class StockPriceHistoryViewSet(viewsets.ViewSet):
     def list(self, request):
@@ -34,4 +37,28 @@ class StockPriceHistoryViewSet(viewsets.ViewSet):
         
 
 def index(request):
-    return render(request, template_name='api_v1/index.html')
+    csv_path = os.path.join(settings.BASE_DIR, 'data', 'reddit_sentiment_data.csv')
+    sentiment_data = RedditSentimentData(csv_path)
+    df_filtered = sentiment_data.filter_strategies('engagement_ratio')
+    fixed_dates = sentiment_data.extract_portfolios(df_filtered)
+    
+    # Define stock list and date range
+    stock_list = df_filtered.index.get_level_values('stock').unique().tolist()
+    start_date = '2021-01-28'
+    end_date = '2021-07-25'
+    historical_data_path = os.path.join(settings.BASE_DIR, 'data', 'stock_historical_prices_2019-2024')
+    df_portfolio = sentiment_data.load_historical_data(historical_data_path, stock_list, fixed_dates, start_date, end_date)
+    print(df_portfolio)
+    market_index = 'QQQ'
+    file_path_index = os.path.join(settings.BASE_DIR, 'data', 'market_indexes_2019-2024', f'{market_index}.csv')
+    portfolio_returns = sentiment_data.get_portfolio_returns(file_path_index, df_portfolio, market_index, start_date, end_date)
+    # Convert the portfolio returns DataFrame to a dictionary for rendering in the template
+    portfolio_returns_dict = portfolio_returns.to_dict(orient='index')
+    context = {
+        'portfolio_returns': portfolio_returns_dict,
+        'start_date': start_date,
+        'end_date': end_date,
+        'market_index': market_index
+    }
+
+    return render(request, template_name='api_v1/index.html', context=context)
