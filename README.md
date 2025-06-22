@@ -1,45 +1,63 @@
 # Trading on Sentiment
 
-[![Project Status](https://img.shields.io/badge/Status-Ongoing-green.svg)](https://github.com/your-username/your-repo-name)
-[![Python Version](https://img.shields.io/badge/Python-3.x-blue.svg)](https://www.python.org/)
-[![Django Version](https://img.shields.io/badge/Django-Latest-brightgreen.svg)](https://www.djangoproject.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub Stars](https://img.shields.io/github/stars/your-username/your-repo-name?style=social)](https://github.com/your-username/your-repo-name/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/your-username/your-repo-name?style=social)](https://github.com/your-username/your-repo-name/network/members)
+[](https://github.com/your-username/your-repo-name)
+[](https://www.python.org/)
+[](https://www.djangoproject.com/)
+[](https://opensource.org/licenses/MIT)
+[](https://github.com/your-username/your-repo-name/stargazers)
+[](https://github.com/your-username/your-repo-name/network/members)
 
 ## Overview
 
-The Stock Sentiment Investment Project is an initiative to explore the relationship between public sentiment, particularly from platforms like Reddit (specifically the r/wallstreetbets community), and stock market movements. The goal is to develop tools and models that can:
+The **Trading on Sentiment** project is an initiative to explore the relationship between public sentiment, particularly from online communities like **Reddit's r/wallstreetbets**, and its potential influence on stock market movements. This application demonstrates a data-driven approach to portfolio construction.
 
-* **Collect and analyze textual data** from social media and other sources related to specific stocks.
-* **Quantify sentiment** expressed in this data using Natural Language Processing (NLP) techniques.
-* **Develop investing strategies** based on data collected and organised.
-* **Calculate cumulative returns** to benchmark performance against established market indices.
+The goal is to develop tools and models that can:
+
+  * **Collect and analyze textual data** from social media posts related to specific stocks.
+  * **Quantify sentiment** expressed in this data using Natural Language Processing (NLP) techniques.
+  * **Develop investing strategies** based on indicators derived from the collected and organized sentiment data.
+  * **Calculate and visualize cumulative returns** to benchmark performance against established market indices, offering insights into community-driven strategies.
 
 This project is currently in an **ongoing** phase and aims to provide insights and tools for both researchers and individuals interested in the intersection of social media and finance.
 
 ## Key Features
 
-* **Reddit Data Collection:** Scripts to scrape and store historical posts and comments from relevant subreddits.
-* **Sentiment Analysis:** Implementation of various NLP techniques (e.g., VADER, TextBlob, transformer-based models) to analyze the sentiment of textual data.
-* **Data Storage:** Utilizes a robust database (currently MariaDB, with potential for other options) to store collected data, sentiment scores, and stock prices.
-
+  * **Reddit Data Collection:** Scripts are implemented to scrape and store historical posts, comments, upvote counts, and content from the Wallstreetbets subreddit.
+  * **Sentiment Analysis Implementation:** Utilizes NLP techniques, specifically the **Stanza** Python library, to analyze the sentiment (positive, neutral, negative) within post titles and content. It extracts stock tickers and assigns a comprehensive sentiment score per post.
+  * **Dynamic Portfolio Strategies:** Four distinct indicators are available to filter and rank stocks monthly, leading to hypothetical portfolio constructions:
+      * **Engagement Ratio (Average):** Measures discussion relative to popularity (average comments / average upvotes).
+      * **Average Sentiment Score:** Overall sentiment across posts for a stock.
+      * **Total Comments (Sum):** Reflects total discussion volume.
+      * **Total Post Score (Sum):** Indicates cumulative popularity.
+  * **Performance Visualization:** The dashboard visually compares the historical performance of these monthly rebalanced, sentiment-driven portfolios against a chosen market benchmark index (e.g., S\&P 500, NASDAQ).
+  * **Robust Data Storage:** Utilizes a database (currently **MariaDB**, with potential for other options) to store collected raw data, derived sentiment scores, and historical stock prices.
+  * **Full-Stack Architecture:**
+      * **Frontend:** Built with **React** and **Vite** for a fast, modern, and interactive user interface, styled with **Material-UI (MUI)**.
+      * **Backend:** Powered by **Django REST Framework** for a robust and scalable API, handling data processing, analysis, and serving.
 
 ## Technologies Used
 
-* **Python:** The primary programming language for data collection, analysis, and backend development.
-* **Django:** A high-level Python web framework used for building the web interface (optional).
-* **NLP Libraries:** Libraries such as NLTK, spaCy, Transformers (Hugging Face) for natural language processing.
-* **Data Scraping:** Libraries like PRAW (Python Reddit API Wrapper) and potentially others for web scraping.
-* **Database:** MariaDB (MySQL compatible) for storing project data.
-* **Data Analysis:** Libraries like Pandas and NumPy for data manipulation and analysis.
-* **Data Visualization (Optional):** Libraries like Matplotlib and Seaborn for creating charts and graphs.
-* **Financial APIs:** Integration with APIs like Alpha Vantage or others to fetch stock data.
+  * **Python:** The primary programming language for data collection, analysis, and backend development.
+  * **Django:** A high-level Python web framework for building the RESTful API.
+  * **Django REST Framework (DRF):** For building the powerful and flexible Web API endpoints.
+  * **NLP Libraries:** **Stanza** (for core sentiment analysis), with potential for integration of others like NLTK, spaCy, or Hugging Face's Transformers for broader NLP tasks.
+  * **Data Scraping:** Libraries like **PRAW** (Python Reddit API Wrapper) for efficient data collection from Reddit.
+  * **Database:** **MariaDB** (MySQL compatible) for storing all project data (posts, sentiment scores, stock prices).
+  * **Data Analysis:** **Pandas** and **NumPy** for robust data manipulation, aggregation, and analytical computations.
+  * **Data Visualization (Frontend):** While not explicitly listed here, a React-compatible charting library (e.g., Recharts, Nivo, Chart.js) would be used for the dashboard visualizations.
+  * **Financial APIs:** Integration with APIs (e.g., **Alpha Vantage**, or other reliable sources) to fetch historical stock data and market index prices.
+  * **Frontend Build Tool:** **Vite** for incredibly fast development and optimized production builds.
+  * **Frontend Framework:** **React** for building the dynamic and responsive user interface.
+  * **UI Component Library:** **Material-UI (MUI)** for pre-built, accessible, and highly customizable UI components.
+  * **HTTP Client (Frontend):** **Axios** for making efficient API requests from the React application to the Django backend.
 
 ## Contact
 
-* Linkedin: https://www.linkedin.com/in/wenshin-luo/
-* Email: wadevs14161@gmail.com
----
+  * **LinkedIn:** [https://www.linkedin.com/in/wenshin-luo/](https://www.linkedin.com/in/wenshin-luo/)
+  * **Email:** wadevs14161@gmail.com
 
-**Last Updated:** May 18, 2025 (Adjust the date as needed)
+-----
+
+**Last Updated:** June 22, 2025
+
+-----
