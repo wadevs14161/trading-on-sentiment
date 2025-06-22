@@ -1,34 +1,44 @@
 body {
-  background-color:rgb(41, 210, 187); /* Light teal green */
-  font-family: Arial, sans-serif;
+  background-color: #fafafa;
+  color: rgba(0, 0, 0, 0.87);
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
   margin: 0;
   padding: 0;
 }
 
-.container {
-  padding: 20px;
-  text-align: center;
+h1, h2, h3, h4, h5, h6 {
+  color: rgba(0, 0, 0, 0.87);
+  font-weight: 400;
 }
 
-.button {
-  background-color: #008080; /* Teal green */
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  margin: 10px;
-  cursor: pointer;
-  border-radius: 5px;
+.MuiDrawer-paper {
+  background-color: #fff !important;
+  color: rgba(0, 0, 0, 0.87) !important;
 }
 
-.button.off {
-  background-color: grey;
-  color: white;
+.MuiButton-containedPrimary {
+  background-color: #1976d2 !important;
+  color: #fff !important;
 }
 
-.chart-container {
-  margin-top: 20px;
+.MuiButton-containedPrimary:hover {
+  background-color: #1565c0 !important;
 }
 
-.checkbox-container {
-  margin-top: 20px;
+.MuiTextField-root {
+  background-color: #fff !important;
+  border-radius: 4px;
 }
+
+.MuiInputBase-input {
+  color: rgba(0, 0, 0, 0.87) !important;
+}
+
+.MuiMenu-paper {
+  background-color: #fff !important;
+  color: rgba(0, 0, 0, 0.87) !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e0e0e0;
+  border-
