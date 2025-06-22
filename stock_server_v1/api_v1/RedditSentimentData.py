@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 class RedditSentimentData:
     def __init__(self, file_path: str):
@@ -9,6 +9,7 @@ class RedditSentimentData:
         """
         self.file_path = file_path
         self.df_sentiment = self.load_sentiment_data()
+        self.portfolio = []
 
     def load_sentiment_data(self) -> pd.DataFrame:
         """
@@ -42,17 +43,33 @@ class RedditSentimentData:
         - Top 5 "Sentiment" stocks
         - Top 5 "Engagement" stocks
         """
-        # Aggregate monthly engagement
-        df_engagement = (self.df_sentiment.reset_index('stock').groupby([pd.Grouper(freq='ME'), 'stock'])[[indicator]].mean())
-        # Rank based on specific indicator
-        df_engagement['rank'] = (df_engagement.groupby(level=0)[indicator].transform(lambda x: x.rank(ascending=False).astype(int)))
-        # Filter out top 5 ranking
-        df_filtered = df_engagement[df_engagement['rank'] < 6].copy()
-        # Adjust date to be the first day of the month
-        df_filtered = df_filtered.reset_index('stock')
-        df_filtered.index = df_filtered.index + pd.DateOffset(1)
-        df_filtered = df_filtered.reset_index().set_index(['date', 'stock'])
-        
+        df_filtered = pd.DataFrame()
+        # --- Refactored to reduce duplication ---
+        agg_map = {
+            'engagement_ratio': 'mean',
+            'total_sentiment': 'mean',
+            'comms_num': 'sum',
+            'score': 'sum'
+        }
+        if indicator in agg_map:
+            agg_func = agg_map[indicator]
+            # Aggregate monthly by indicator
+            df_agg = (
+                self.df_sentiment.reset_index('stock')
+                .groupby([pd.Grouper(freq='ME'), 'stock'])[[indicator]]
+                .agg(agg_func)
+            )
+            # Rank based on specific indicator
+            df_agg['rank'] = (
+                df_agg.groupby(level=0)[indicator]
+                .transform(lambda x: x.rank(ascending=False).astype(int))
+            )
+            # Filter out top 5 ranking
+            df_filtered = df_agg[df_agg['rank'] < 6].copy()
+            # Adjust date to be the first day of the month
+            df_filtered = df_filtered.reset_index('stock')
+            df_filtered.index = df_filtered.index + pd.DateOffset(1)
+            df_filtered = df_filtered.reset_index().set_index(['date', 'stock'])       
         return df_filtered
     
     def extract_portfolios(self, df_filtered: pd.DataFrame) -> dict:
@@ -63,14 +80,15 @@ class RedditSentimentData:
         # Get all dates from each date index
         dates = df_filtered.index.get_level_values('date').unique().to_list()
         # List all stocks for each date
-        fixed_dates = {}
+        tickers_by_date = {}
         for date in dates:
-            fixed_dates[date.strftime('%Y-%m-%d')] = df_filtered.xs(date, level=0).index.tolist()
-
-        return fixed_dates
+            tickers_by_date[date.strftime('%Y-%m-%d')] = df_filtered.xs(date, level=0).index.tolist()
+        
+        self.portfolio = tickers_by_date
+        return tickers_by_date
     
 
-    def load_historical_data(self, file_path: str, stock_list: list, fixed_dates: dict, start: str, end: str) -> pd.DataFrame:
+    def load_historical_data(self, dir_path: str, stock_list: list, fixed_dates: dict, start: str, end: str) -> pd.DataFrame:
         '''
         Extract the stocks to form portfolios with at the start of each new month
         Create a dictionary containing start of month and corresponded selected stocks.
@@ -95,9 +113,9 @@ class RedditSentimentData:
         for ticker in stock_list:
             try:
                 # file_path = f'data/stock_historical_prices_2019-2024/{ticker}.csv'
-                file_path = f'{file_path}/{ticker}.csv'
+                file_path = f'{dir_path}/{ticker}.csv'
                 df_temp = pd.read_csv(file_path).set_index('Price')[start:end]['Close'].to_frame(ticker)
-                print(f'df_temp: {df_temp}')
+                # print(f'df_temp: {df_temp}')
             except:
                 # print(f'Prices of {ticker} might not exist, let it be NaN')
                 # If df_temp cannot be read, let the ticker be NaN
@@ -106,6 +124,7 @@ class RedditSentimentData:
             df_all = pd.concat([df_all, df_temp], axis=1)
         # Calculate log return of each stocks
         df_return = np.log(df_all.astype('float64')).diff().dropna(how='all')
+        # print(f'df_return: {df_return}')
         # Calculate portfolio return based on the fixed dates and stock list
         df_portfolio = pd.DataFrame()
         for start_date in fixed_dates.keys():
@@ -119,7 +138,7 @@ class RedditSentimentData:
         # Convert index to datetime format
         df_portfolio.index = pd.to_datetime(df_portfolio.index)
 
-        print(df_portfolio.head())
+        # print(df_portfolio)
         
         return df_portfolio
     
@@ -147,36 +166,37 @@ class RedditSentimentData:
 
         return portfolio_cumulative_return
     
-    # def plot_portfolio_returns(self, df_portfolio: pd.DataFrame) -> None:
-    #     """
-    #     Plot the portfolio returns.
-    #     """
-    #     plt.figure(figsize=(10, 6))
-    #     for col in df_portfolio.columns:
-    #         plt.plot(df_portfolio.index, df_portfolio[col], label=col)
-    #     plt.xlabel('Date')
-    #     plt.ylabel('Cumulative Return')
-    #     plt.title('Portfolio vs Benchmark Cumulative Return')
-    #     plt.legend()
-    #     plt.grid(True)
-    #     plt.tight_layout()
-    #     plt.show()
+    def plot_portfolio_returns(self, df_portfolio: pd.DataFrame) -> None:
+        """
+        Plot the portfolio returns.
+        """
+        plt.figure(figsize=(10, 6))
+        for col in df_portfolio.columns:
+            plt.plot(df_portfolio.index, df_portfolio[col], label=col)
+        plt.xlabel('Date')
+        plt.ylabel('Cumulative Return')
+        plt.title('Portfolio vs Benchmark Cumulative Return')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
 
 
 if __name__ == "__main__":
     # Example usage
-    sentiment_data = RedditSentimentData('data/reddit_sentiment_data.csv')
+    sentiment_data = RedditSentimentData('/Users/wenshinluo/Documents/Projects/sentiment-investment/stock_server_v1/data/reddit_sentiment_data.csv')
     df_filtered = sentiment_data.filter_strategies('engagement_ratio')
     fixed_dates = sentiment_data.extract_portfolios(df_filtered)
     
     # Define stock list and date range
     stock_list = df_filtered.index.get_level_values('stock').unique().tolist()
     start_date = '2021-01-28'
-    end_date = '2021-07-25'
-    
-    df_portfolio = sentiment_data.load_historical_data(stock_list, fixed_dates, start_date, end_date)
+    end_date = '2021-08-02'
+    file_path = '/Users/wenshinluo/Documents/Projects/sentiment-investment/stock_server_v1/data/stock_historical_prices_2019-2024'
+    df_portfolio = sentiment_data.load_historical_data(file_path, stock_list, fixed_dates, start_date, end_date)
     
     market_index = 'QQQ'
-    portfolio_returns = sentiment_data.get_portfolio_returns(df_portfolio, market_index, start_date, end_date)
+    file_path_index = f'/Users/wenshinluo/Documents/Projects/sentiment-investment/stock_server_v1/data/market_indexes_2019-2024/{market_index}.csv'
+    portfolio_returns = sentiment_data.get_portfolio_returns(file_path_index, df_portfolio, market_index, start_date, end_date)
     
-    # sentiment_data.plot_portfolio_returns(portfolio_returns)
+    sentiment_data.plot_portfolio_returns(portfolio_returns)
