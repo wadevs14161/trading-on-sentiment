@@ -47,6 +47,7 @@ class PortfolioReturnsViewSet(viewsets.ViewSet):
 
         try:
             sentiment_data_path = os.path.join(settings.BASE_DIR, 'data', 'reddit_sentiment_data.csv')
+            print(f"Loading sentiment data from: {sentiment_data_path}")
             sentiment_data = RedditSentimentData(sentiment_data_path)
             df_filtered = sentiment_data.filter_strategies(indicator)
             tickers_by_date = sentiment_data.extract_portfolios(df_filtered)
@@ -60,7 +61,7 @@ class PortfolioReturnsViewSet(viewsets.ViewSet):
             # print(portfolio_returns.head())
             # Reset index to turn the date index into a column
             portfolio_returns_reset = portfolio_returns.reset_index()
-            # pprint(portfolio_returns_reset)
+            pprint(portfolio_returns_reset)
             # Replace NaN with None for JSON serialization
             portfolio_returns_reset = portfolio_returns_reset.replace({np.nan: None})
             # Convert DataFrame to list of dicts

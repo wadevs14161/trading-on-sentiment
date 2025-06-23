@@ -20,14 +20,34 @@ import { portfolioReturns } from './api/PortfolioBenchMark';
 
 const drawerWidth = 240; // Width of the sidebar drawer
 
+// Define a mapping from indicator value to label at the top of your file or inside the component
+const indicatorLabels: Record<string, string> = {
+  engagement_ratio: 'Engagement Ratio',
+  total_sentiment: 'Sentiment',
+  comms_num: 'Most Comments on Posts',
+  score: 'Total Posts Score'
+};
+
+const marketIndexLabels: Record<string, string> = {
+  QQQ: 'S&P 500',
+};
+
 function App() {
   const [chartData, setChartData] = useState<any>(null);
-  const [dateRange, setDateRange] = useState({ start: '2021-01-28', end: '2021-08-02' });
+  const [dateRange, setDateRange] = useState({ start: '2021-01-30', end: '2021-09-30' });
   const [indicator, setIndicator] = useState('engagement_ratio'); // Use value, not label
   const [benchmark, setBenchmark] = useState('QQQ');
   const [loading, setLoading] = useState(false);
   const [tickersByDate, setTickersByDate] = useState<any[]>([]);
   
+  // State for highest return and its date
+  const [highestReturn, setHighestReturn] = useState<number | null>(null);
+  const [highestReturnDate, setHighestReturnDate] = useState<string | null>(null);
+
+  // State for percentage of days with return greater than market index
+  const [percentageDaysGreaterThanMarket, setPercentageDaysGreaterThanMarket] = useState<number | null>(null);
+
+
   useEffect(() => {
     setLoading(true);
     portfolioReturns({
@@ -36,7 +56,7 @@ function App() {
       market_index: benchmark,
       indicator: indicator,
     }).then(data => {
-      console.log('Portfolio returns data:', data);
+      // console.log('Portfolio returns data:', data);
       // Expecting: { portfolio_returns: Array, ... }
       let array: any[] = [];
       if (Array.isArray(data.portfolio_returns)) {
@@ -49,15 +69,29 @@ function App() {
 
       // Use 'index' as the date label
       const labels = array.map((item: any) => item.index);
-      const portfolioReturns = array.map((item: any) => item.portfolio_return);
+      const portfolioReturnsArr = array.map((item: any) => item.portfolio_return);
       const marketIndexReturns = array.map((item: any) => item[benchmark]);
+
+      // Find the highest return value in the portfolio returns and its corresponding date
+      const highestReturnValue = Math.max(...portfolioReturnsArr);
+      const highestReturnIndex = portfolioReturnsArr.indexOf(highestReturnValue);
+      const highestReturnDateValue = labels[highestReturnIndex];
+
+      // Calculate the percentage of days with return greater than market index
+      const daysGreaterThanMarket = portfolioReturnsArr.filter((returnValue, index) => returnValue > marketIndexReturns[index]).length;
+      const totalDays = portfolioReturnsArr.length;
+      const percentageDays = totalDays > 0 ? (daysGreaterThanMarket / totalDays) * 100 : 0;
+      setPercentageDaysGreaterThanMarket(percentageDays);
+
+      setHighestReturn(highestReturnValue);
+      setHighestReturnDate(highestReturnDateValue);
 
       setChartData({
         labels,
         datasets: [
           {
             label: 'Portfolio Return',
-            data: portfolioReturns,
+            data: portfolioReturnsArr,
             borderColor: 'rgba(75,192,192,1)',
             backgroundColor: 'rgba(75,192,192,0.2)',
             tension: 0.1,
@@ -106,14 +140,35 @@ function App() {
                 minHeight: '100vh',
               }}>
               <h2 style={{ textAlign: 'center', width: '100%', margin: '20px 0' }}>
-                Portfolio vs {benchmark}
+                <strong>Portfolio vs. {marketIndexLabels[benchmark]}</strong><br></br>
+                <label style={{ fontSize: 'medium'}}> ({indicatorLabels[indicator] || indicator})</label>
               </h2>
               <BenchmarkChart chartData={chartData} benchmark={benchmark} loading={loading} />
-              
               <h2 style={{ textAlign: 'center', width: '100%', margin: '20px 0' }}>
-                Stocks to buy in by Date
+                KEY METRICS
               </h2>
-              <TickersByDateTable tickersByDate={tickersByDate} />
+              <ul>
+                <li>
+                  {highestReturnDate && highestReturn !== null
+                    ? <>Highest return happened on <strong>{highestReturnDate}</strong> with a return of <strong style={{ color: '#50C878' }}>{(highestReturn * 100).toFixed(2)}%</strong></>
+                    : <p style={{ textAlign: 'center', color: '#888', marginTop: 24 }}>Loading points...</p>
+                  }
+                </li>
+                <li>
+                  {percentageDaysGreaterThanMarket !== null
+                    ? <>Days outperforming {benchmark}: <strong style={{ color: '#50C878' }}>{percentageDaysGreaterThanMarket.toFixed(2)}%</strong></>
+                    : <p style={{ textAlign: 'center', color: '#888', marginTop: 24 }}>Loading points...</p>
+                  }
+                </li>
+              </ul>
+              <h2 style={{ textAlign: 'center', width: '100%', margin: '20px 0' }}>
+                TICKERS BY DATE
+              </h2>
+              {
+                tickersByDate && tickersByDate.length > 0
+                  ? <TickersByDateTable tickersByDate={tickersByDate} />
+                  : <p style={{ textAlign: 'center', color: '#888', marginTop: 24 }}>Loading portfolio...</p>
+              }
             </Box>
           </Box>
         }/>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Drawer, TextField, MenuItem, Box, Button } from '@mui/material';
+import FilterListIcon from '@mui/icons-material/FilterList';
 
 interface SidebarProps {
   variant?: string;
@@ -57,6 +58,21 @@ const Sidebar = ({
       }}
     >
       <Box sx={{ p: 2 }}>
+        <h2 style={{
+          fontSize: '1 rem',
+          fontWeight: 700,
+          textAlign: 'center',
+          margin: 0,
+          marginBottom: '1.5rem',
+          letterSpacing: '0.03em',
+          color: '#1976d2',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <FilterListIcon sx={{ fontSize: '1.6rem', marginRight: '0.5rem' }} />
+          Portfolio Filter
+        </h2>
         <Box sx={{ mb: 2 }}>
           <label style={{ fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', display: 'block', textAlign: 'center' }}>Date</label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -93,7 +109,7 @@ const Sidebar = ({
           </TextField>
         </Box>
         <Box>
-          <label style={{ fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', display: 'block', textAlign: 'center' }}>Benchmark</label>
+          <label style={{ fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', display: 'block', textAlign: 'center' }}>Market Index</label>
           <TextField
             select
             variant="outlined"
@@ -112,7 +128,19 @@ const Sidebar = ({
           fullWidth
           onClick={handleApply}
           disabled={!changed}
-          sx={{ mt: 2, backgroundColor: '#1976d2', '&:hover': { backgroundColor: '#115293' } }}
+          sx={{
+            mt: 2,
+            backgroundColor: changed ? '#1976d2' : '#C0C0C0 !important', // much lighter grey when disabled
+            color: changed ? '#fff' : '#bdbdbd',
+            cursor: changed ? 'pointer' : 'not-allowed',
+            boxShadow: changed ? 3 : 0,
+            '&:hover': {
+              backgroundColor: changed ? '#115293' : '#e0e0e0',
+              color: changed ? '#fff' : '#888',
+              cursor: changed ? 'pointer' : 'not-allowed',
+            },
+            transition: 'background 0.2s, color 0.2s, box-shadow 0.2s',
+          }}
         >
           Apply
         </Button>

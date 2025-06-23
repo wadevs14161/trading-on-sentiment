@@ -41,7 +41,7 @@ class RedditSentimentData:
         Aggregate Monthly and calculate average sentiment for the month
         Filter data using the specified indicator
         - Top 5 "Sentiment" stocks
-        - Top 5 "Engagement" stocks
+        - Top 5 "Engagement ratio" stocks
         """
         df_filtered = pd.DataFrame()
         # --- Refactored to reduce duplication ---
@@ -64,8 +64,8 @@ class RedditSentimentData:
                 df_agg.groupby(level=0)[indicator]
                 .transform(lambda x: x.rank(ascending=False).astype(int))
             )
-            # Filter out top 5 ranking
-            df_filtered = df_agg[df_agg['rank'] < 6].copy()
+            # Filter out top N ranking
+            df_filtered = df_agg[df_agg['rank'] <= 20].copy()
             # Adjust date to be the first day of the month
             df_filtered = df_filtered.reset_index('stock')
             df_filtered.index = df_filtered.index + pd.DateOffset(1)
@@ -138,7 +138,7 @@ class RedditSentimentData:
         # Convert index to datetime format
         df_portfolio.index = pd.to_datetime(df_portfolio.index)
 
-        # print(df_portfolio)
+        print(df_portfolio)
         
         return df_portfolio
     
@@ -151,6 +151,8 @@ class RedditSentimentData:
         # Load prices of market index and calculate returns to compare to our strategy
         # file_path = f'data/market_indexes_2019-2024/{market_index}.csv'
         benchmark_index = pd.read_csv(file_path).set_index('Price')[2:][start_date:end_date]
+        # Set index name to 'index'
+        benchmark_index.index.name = 'index'
         benchmark_index = benchmark_index.astype('float64')
         benchmark_index.index = pd.to_datetime(benchmark_index.index)
         return_benchmark_index = np.log(benchmark_index['Close']).diff().dropna()
