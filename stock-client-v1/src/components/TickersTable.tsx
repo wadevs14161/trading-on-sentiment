@@ -14,7 +14,7 @@ const TickersByDateTable: React.FC<TickersByDateTableProps> = ({ tickersByDate }
         <TableHead>
           <TableRow>
             <TableCell>Date</TableCell>
-            <TableCell>Stocks Bought</TableCell>
+            <TableCell>Tickers</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
