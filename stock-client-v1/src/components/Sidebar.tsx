@@ -104,8 +104,8 @@ const Sidebar = ({
           >
             <MenuItem value="engagement_ratio">Engagement Ratio</MenuItem>
             <MenuItem value="total_sentiment">Sentiment</MenuItem>
-            <MenuItem value="score">Total Score of Posts</MenuItem>
-            <MenuItem value="comms_num">Total Number of Comments</MenuItem>
+            <MenuItem value="score">Score of Posts</MenuItem>
+            <MenuItem value="comms_num">Number of Comments of Posts</MenuItem>
           </TextField>
         </Box>
         <Box>

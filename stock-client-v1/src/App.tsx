@@ -24,8 +24,8 @@ const drawerWidth = 240; // Width of the sidebar drawer
 const indicatorLabels: Record<string, string> = {
   engagement_ratio: 'Engagement Ratio',
   total_sentiment: 'Sentiment',
-  comms_num: 'Most Comments on Posts',
-  score: 'Total Posts Score'
+  comms_num: 'Most Comments in Posts',
+  score: 'Top Score in Posts'
 };
 
 const marketIndexLabels: Record<string, string> = {
