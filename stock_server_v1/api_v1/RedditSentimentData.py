@@ -48,8 +48,8 @@ class RedditSentimentData:
         agg_map = {
             'engagement_ratio': 'mean',
             'total_sentiment': 'mean',
-            'comms_num': 'sum',
-            'score': 'sum'
+            'comms_num': 'mean',
+            'score': 'mean'
         }
         if indicator in agg_map:
             agg_func = agg_map[indicator]
@@ -65,7 +65,7 @@ class RedditSentimentData:
                 .transform(lambda x: x.rank(ascending=False).astype(int))
             )
             # Filter out top N ranking
-            df_filtered = df_agg[df_agg['rank'] <= 20].copy()
+            df_filtered = df_agg[df_agg['rank'] <= 25].copy()
             # Adjust date to be the first day of the month
             df_filtered = df_filtered.reset_index('stock')
             df_filtered.index = df_filtered.index + pd.DateOffset(1)
