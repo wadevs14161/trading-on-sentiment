@@ -102,10 +102,10 @@ const Sidebar = ({
             onChange={(e) => setPendingIndicator(e.target.value)}
             sx={{ input: { color: 'black', backgroundColor: 'white' }, width: '100%' }}
           >
-            <MenuItem value="engagement_ratio">Engagement Ratio</MenuItem>
             <MenuItem value="total_sentiment">Sentiment</MenuItem>
             <MenuItem value="score">Score of Posts</MenuItem>
             <MenuItem value="comms_num">Number of Comments of Posts</MenuItem>
+            <MenuItem value="engagement_ratio">Engagement Ratio</MenuItem>
           </TextField>
         </Box>
         <Box>

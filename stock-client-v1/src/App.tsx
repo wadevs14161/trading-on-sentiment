@@ -34,8 +34,8 @@ const marketIndexLabels: Record<string, string> = {
 
 function App() {
   const [chartData, setChartData] = useState<any>(null);
-  const [dateRange, setDateRange] = useState({ start: '2021-01-30', end: '2021-09-30' });
-  const [indicator, setIndicator] = useState('engagement_ratio'); // Use value, not label
+  const [dateRange, setDateRange] = useState({ start: '2021-03-01', end: '2021-08-31' });
+  const [indicator, setIndicator] = useState('total_sentiment'); // Use value, not label
   const [benchmark, setBenchmark] = useState('QQQ');
   const [loading, setLoading] = useState(false);
   const [tickersByDate, setTickersByDate] = useState<any[]>([]);
@@ -47,9 +47,16 @@ function App() {
   // State for percentage of days with return greater than market index
   const [percentageDaysGreaterThanMarket, setPercentageDaysGreaterThanMarket] = useState<number | null>(null);
 
+  // Loading state for metrics
+  const [metricsLoading, setMetricsLoading] = useState(false);
+
+  // Loading state for tickers table
+  const [tickersLoading, setTickersLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
+    setMetricsLoading(true);
+    setTickersLoading(true);
     portfolioReturns({
       start_date: dateRange.start,
       end_date: dateRange.end,
@@ -107,9 +114,13 @@ function App() {
       });
       setTickersByDate(data.tickers_by_date || []);
       setLoading(false);
+      setMetricsLoading(false);
+      setTickersLoading(false);
     }).catch(error => {
       console.error('Error fetching portfolio returns:', error);
       setLoading(false);
+      setMetricsLoading(false);
+      setTickersLoading(false);
     });
   }, [dateRange, indicator, benchmark]);
 
@@ -147,28 +158,30 @@ function App() {
               <h2 style={{ textAlign: 'center', width: '100%', margin: '20px 0' }}>
                 KEY METRICS
               </h2>
-              <ul>
-                <li>
-                  {highestReturnDate && highestReturn !== null
-                    ? <>Highest return happened on <strong>{highestReturnDate}</strong> with a return of <strong style={{ color: '#50C878' }}>{(highestReturn * 100).toFixed(2)}%</strong></>
-                    : <p style={{ textAlign: 'center', color: '#888', marginTop: 24 }}>Loading points...</p>
-                  }
-                </li>
-                <li>
-                  {percentageDaysGreaterThanMarket !== null
-                    ? <>Days outperforming {benchmark}: <strong style={{ color: '#50C878' }}>{percentageDaysGreaterThanMarket.toFixed(2)}%</strong></>
-                    : <p style={{ textAlign: 'center', color: '#888', marginTop: 24 }}>Loading points...</p>
-                  }
-                </li>
-              </ul>
+              {/* CHANGED: Use metricsLoading instead of checking for data */}
+              {metricsLoading ? (
+                <p style={{ textAlign: 'center', color: '#888', marginTop: 24 }}>Loading metrics...</p>
+              ) : (
+                <ul>
+                  <li>
+                    Highest return happened on <strong>{highestReturnDate}</strong> with a return of <strong style={{ color: '#50C878' }}>{highestReturn !== null ? (highestReturn * 100).toFixed(2) : '--'}%</strong>
+                  </li>
+                  <li>
+                    Days outperforming {benchmark}: <strong style={{ color: '#50C878' }}>
+                      {percentageDaysGreaterThanMarket !== null ? percentageDaysGreaterThanMarket.toFixed(2) : '--'}%
+                    </strong>
+                  </li>
+                </ul>
+              )}
               <h2 style={{ textAlign: 'center', width: '100%', margin: '20px 0' }}>
                 TICKERS BY DATE
               </h2>
-              {
-                tickersByDate && tickersByDate.length > 0
-                  ? <TickersByDateTable tickersByDate={tickersByDate} />
-                  : <p style={{ textAlign: 'center', color: '#888', marginTop: 24 }}>Loading portfolio...</p>
-              }
+              {/* CHANGED: Use tickersLoading instead of checking for data */}
+              {tickersLoading ? (
+                <p style={{ textAlign: 'center', color: '#888', marginTop: 24 }}>Loading portfolio...</p>
+              ) : (
+                <TickersByDateTable tickersByDate={tickersByDate} />
+              )}
             </Box>
           </Box>
         }/>
