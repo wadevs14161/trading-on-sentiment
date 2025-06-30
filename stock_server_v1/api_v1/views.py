@@ -46,7 +46,9 @@ class PortfolioReturnsViewSet(viewsets.ViewSet):
         indicator = request.query_params.get('indicator', 'engagement_ratio')
 
         try:
-            sentiment_data_path = os.path.join(settings.BASE_DIR, 'data', 'reddit_sentiment_data.csv')
+            # file = "reddit_sentiment_data2.csv"
+            file = "reddit_sentiment_gemini_v3.csv"
+            sentiment_data_path = os.path.join(settings.BASE_DIR, 'data', file)
             print(f"Loading sentiment data from: {sentiment_data_path}")
             sentiment_data = RedditSentimentData(sentiment_data_path)
             df_filtered = sentiment_data.filter_strategies(indicator)

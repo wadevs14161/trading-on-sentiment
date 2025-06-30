@@ -21,17 +21,17 @@ class RedditSentimentData:
 
         # Convert 'date' column to datetime format
         df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
-        # Set multiple index for date and stock
-        df = df.set_index(['date', 'stock'])
-        # Add up sentiment score of title and body
-        df['total_sentiment'] = df['title_sentiment'] + df['body_sentiment']
-        df = df.groupby(['date', 'stock']).agg('sum')
-        # Set score to 1 if it is less than 1
-        df['score'] = np.where(df['score'] < 1, 1, df['score'])
-        # Add column engagement_ratio
-        df['engagement_ratio'] = df['comms_num'] / df['score']
-        # Convert date string to datetime format
-        df = df.reset_index()
+        # # Set multiple index for date and stock
+        # df = df.set_index(['date', 'stock'])
+        # # Add up sentiment score of title and body
+        # df['total_sentiment'] = df['title_sentiment'] + df['body_sentiment']
+        # df = df.groupby(['date', 'stock']).agg('sum')
+        # # Set score to 1 if it is less than 1
+        # df['score'] = np.where(df['score'] < 1, 1, df['score'])
+        # # Add column engagement_ratio
+        # df['engagement_ratio'] = df['comms_num'] / df['score']
+        # # Convert date string to datetime format
+        # df = df.reset_index()
         df = df.set_index(['date', 'stock'])
 
         return df
@@ -65,7 +65,7 @@ class RedditSentimentData:
                 .transform(lambda x: x.rank(ascending=False).astype(int))
             )
             # Filter out top N ranking
-            df_filtered = df_agg[df_agg['rank'] <= 25].copy()
+            df_filtered = df_agg[df_agg['rank'] <= 5].copy()
             # Adjust date to be the first day of the month
             df_filtered = df_filtered.reset_index('stock')
             df_filtered.index = df_filtered.index + pd.DateOffset(1)
@@ -110,6 +110,7 @@ class RedditSentimentData:
 
         # Read historical prices of the stocks from csv files in stock_historical_prices_2019-2024
         df_all = pd.DataFrame()
+        df_temp = pd.DataFrame()
         for ticker in stock_list:
             try:
                 # file_path = f'data/stock_historical_prices_2019-2024/{ticker}.csv'
@@ -117,7 +118,7 @@ class RedditSentimentData:
                 df_temp = pd.read_csv(file_path).set_index('Price')[start:end]['Close'].to_frame(ticker)
                 # print(f'df_temp: {df_temp}')
             except:
-                # print(f'Prices of {ticker} might not exist, let it be NaN')
+                print(f'Prices of {ticker} might not exist, let it be NaN')
                 # If df_temp cannot be read, let the ticker be NaN
                 df_temp = pd.DataFrame(index=pd.date_range(start, end), columns=[ticker])
                 df_temp[ticker] = np.nan
@@ -138,7 +139,7 @@ class RedditSentimentData:
         # Convert index to datetime format
         df_portfolio.index = pd.to_datetime(df_portfolio.index)
 
-        print(df_portfolio)
+        # print(df_portfolio)
         
         return df_portfolio
     
