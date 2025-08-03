@@ -18,4 +18,4 @@ stock_server_v1/.db_credential.json
 # pyc files
 *.pyc
 __pycache__/
-package.json
+package-lock.json
