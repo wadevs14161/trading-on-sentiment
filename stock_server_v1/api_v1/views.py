@@ -2,7 +2,7 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
-from .models import StockPriceHistory, NewsCache, NewsArticle, PortfolioCache, PortfolioReturn, PortfolioTicker
+from .models import StockPriceHistory, NewsCache, NewsArticle, MonthlyIndicatorCache, MonthlyIndicatorScore
 from .Serializers import StockPriceHistorySerializer
 from django.shortcuts import render
 from .RedditSentimentData import RedditSentimentData
@@ -15,6 +15,10 @@ from pprint import pprint
 import hashlib
 import json
 from datetime import timedelta
+import logging
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 class StockPriceHistoryViewSet(viewsets.ViewSet):
     def list(self, request):
@@ -44,6 +48,170 @@ class StockPriceHistoryViewSet(viewsets.ViewSet):
 
 
 class PortfolioReturnsViewSet(viewsets.ViewSet):
+    def get_cached_monthly_indicators(self, indicator, start_date, end_date):
+        """
+        Get cached monthly indicator scores for the date range.
+        Returns (cached_data, missing_months) where:
+        - cached_data: dict of {month_str: [(ticker, score, rank), ...]}
+        - missing_months: list of datetime objects for months that need calculation
+        """
+        start_dt = pd.to_datetime(start_date)
+        end_dt = pd.to_datetime(end_date)
+        
+        # Generate all months in the range
+        months_needed = []
+        current_month = start_dt.replace(day=1)  # First day of start month
+        while current_month <= end_dt:
+            months_needed.append(current_month)
+            current_month = (current_month + pd.offsets.MonthEnd(1) + pd.DateOffset(days=1))
+        
+        cached_data = {}
+        missing_months = []
+        now = timezone.now()
+        
+        print(f"🔍 MONTHLY CACHE CHECK: {indicator} | {len(months_needed)} months needed ({start_date} to {end_date})")
+        
+        for month_dt in months_needed:
+            month_str = month_dt.strftime('%Y-%m-%d')
+            
+            # Check for cached monthly data
+            cached_month = MonthlyIndicatorCache.objects.filter(
+                month_year=month_dt.date(),
+                indicator=indicator,
+                expires_at__gt=now
+            ).first()
+            
+            if cached_month:
+                # Get cached scores for this month
+                scores = cached_month.scores.filter(rank__lte=5).order_by('rank')
+                cached_data[month_str] = [(score.ticker, score.score_value, score.rank) for score in scores]
+                print(f"📋 MONTHLY CACHE HIT: {month_str} | {len(cached_data[month_str])} stocks")
+            else:
+                missing_months.append(month_dt)
+                print(f"❌ MONTHLY CACHE MISS: {month_str}")
+        
+        return cached_data, missing_months
+    
+    def cache_monthly_indicators(self, indicator, month_dt, stocks_data):
+        """
+        Cache monthly indicator scores for a specific month.
+        stocks_data: list of (ticker, score, rank) tuples
+        """
+        month_str = month_dt.strftime('%Y-%m-%d')
+        now = timezone.now()
+        
+        # Clean up any existing cache for this month/indicator
+        MonthlyIndicatorCache.objects.filter(
+            month_year=month_dt.date(),
+            indicator=indicator
+        ).delete()
+        
+        # Create new cache entry (expires in 7 days - monthly data is relatively stable)
+        expires_at = now + timedelta(days=7)
+        monthly_cache = MonthlyIndicatorCache.objects.create(
+            month_year=month_dt.date(),
+            indicator=indicator,
+            expires_at=expires_at
+        )
+        
+        # Save stock scores
+        for ticker, score_value, rank in stocks_data:
+            MonthlyIndicatorScore.objects.create(
+                cache=monthly_cache,
+                ticker=ticker,
+                score_value=score_value,
+                rank=rank
+            )
+        
+        print(f"💾 MONTHLY CACHED: {month_str} | {len(stocks_data)} stocks | expires in 7 days")
+    
+    def calculate_missing_monthly_indicators(self, indicator, missing_months):
+        """
+        Calculate indicator scores for missing months using RedditSentimentData logic.
+        Returns dict of {month_str: [(ticker, score, rank), ...]}
+        """
+        if not missing_months:
+            return {}
+        
+        print(f"🔄 CALCULATING MISSING MONTHS: {len(missing_months)} months for {indicator}")
+        
+        # Load sentiment data
+        file = "reddit_sentiment_gemini_v3.csv"
+        sentiment_data_path = os.path.join(settings.BASE_DIR, 'data', file)
+        sentiment_data = RedditSentimentData(sentiment_data_path)
+        
+        # Get the raw sentiment dataframe
+        df_sentiment = sentiment_data.df_sentiment
+        
+        calculated_data = {}
+        
+        for month_dt in missing_months:
+            month_str = month_dt.strftime('%Y-%m-%d')
+            
+            # Calculate for this specific month using RedditSentimentData logic
+            month_start = month_dt
+            month_end = month_dt + pd.offsets.MonthEnd()
+            
+            # Filter data for this month
+            month_data = df_sentiment.loc[
+                (df_sentiment.index.get_level_values('date') >= month_start) & 
+                (df_sentiment.index.get_level_values('date') <= month_end)
+            ]
+            
+            if month_data.empty:
+                print(f"⚠️  No data available for {month_str}")
+                calculated_data[month_str] = []
+                continue
+            
+            # Aggregate by stock for this month (same logic as filter_strategies)
+            agg_map = {
+                'engagement_ratio': 'mean',
+                'total_sentiment': 'mean', 
+                'comms_num': 'mean',
+                'score': 'mean'
+            }
+            
+            if indicator not in agg_map:
+                print(f"⚠️  Unknown indicator: {indicator}")
+                calculated_data[month_str] = []
+                continue
+            
+            agg_func = agg_map[indicator]
+            
+            # Group by stock and aggregate
+            month_agg = (
+                month_data.reset_index('stock')
+                .groupby('stock')[[indicator]]
+                .agg(agg_func)
+                .dropna()
+            )
+            
+            if month_agg.empty:
+                print(f"⚠️  No valid data after aggregation for {month_str}")
+                calculated_data[month_str] = []
+                continue
+            
+            # Rank stocks (descending order - higher is better)
+            month_agg['rank'] = month_agg[indicator].rank(ascending=False, method='first').astype(int)
+            
+            # Get top 5 stocks
+            top_stocks = month_agg[month_agg['rank'] <= 5].sort_values('rank')
+            
+            # Convert to list of tuples
+            stocks_data = [
+                (ticker, float(row[indicator]), int(row['rank'])) 
+                for ticker, row in top_stocks.iterrows()
+            ]
+            
+            calculated_data[month_str] = stocks_data
+            
+            # Cache this month's data
+            self.cache_monthly_indicators(indicator, month_dt, stocks_data)
+            
+            print(f"✅ CALCULATED: {month_str} | {len(stocks_data)} stocks")
+        
+        return calculated_data
+
     def list(self, request):
         start_date = request.query_params.get('start_date', '2021-01-28')
         end_date = request.query_params.get('end_date', '2021-08-02')
@@ -61,67 +229,65 @@ class PortfolioReturnsViewSet(viewsets.ViewSet):
             end_date = max_end_date
 
         try:
-            # Create cache key from parameters
-            cache_params = f"{start_date}_{end_date}_{market_index}_{indicator}"
-            cache_key = hashlib.md5(cache_params.encode()).hexdigest()
+            print(f"🚀 PORTFOLIO REQUEST: {indicator} | {start_date} to {end_date} | {market_index}")
             
-            # Check for existing valid cache
-            now = timezone.now()
-            cached_portfolio = PortfolioCache.objects.filter(
-                cache_key=cache_key,
-                expires_at__gt=now
-            ).first()
+            # 1. Check for cached monthly indicators
+            cached_monthly_data, missing_months = self.get_cached_monthly_indicators(
+                indicator, start_date, end_date
+            )
             
-            if cached_portfolio:
-                # Return cached portfolio data
-                portfolio_returns_list = []
-                for return_data in cached_portfolio.returns.all().order_by('date'):
-                    portfolio_returns_list.append({
-                        'index': return_data.date.strftime('%Y-%m-%d'),
-                        'portfolio_return': return_data.portfolio_return,
-                        cached_portfolio.market_index: return_data.benchmark_return,
-                    })
-                
-                # Get tickers by date
-                tickers_by_date_dict = {}
-                for ticker_data in cached_portfolio.tickers.all().order_by('date', 'ticker'):
-                    date_str = ticker_data.date.strftime('%Y-%m-%d')
-                    if date_str not in tickers_by_date_dict:
-                        tickers_by_date_dict[date_str] = []
-                    tickers_by_date_dict[date_str].append(ticker_data.ticker)
-                
-                tickers_by_date_list = [{'date': date, 'tickers': tickers} 
-                                       for date, tickers in tickers_by_date_dict.items()]
-                
-                return Response({
-                    'portfolio_returns': portfolio_returns_list,
-                    'start_date': cached_portfolio.start_date.strftime('%Y-%m-%d'),
-                    'end_date': cached_portfolio.end_date.strftime('%Y-%m-%d'),
-                    'market_index': cached_portfolio.market_index,
-                    'indicator': cached_portfolio.indicator,
-                    'tickers_by_date': tickers_by_date_list,
-                    'cached': True,
-                    'cached_at': cached_portfolio.created_at.isoformat()
-                })
+            # 2. Calculate missing monthly data if needed
+            if missing_months:
+                calculated_monthly_data = self.calculate_missing_monthly_indicators(
+                    indicator, missing_months
+                )
+                # Merge calculated data with cached data
+                cached_monthly_data.update(calculated_monthly_data)
             
-            # No valid cache found - perform calculation
+            # 3. Build filtered dataframe from cached/calculated monthly data
+            print(f"📊 BUILDING PORTFOLIO: {len(cached_monthly_data)} months of data")
+            
+            # Convert monthly data to the format expected by portfolio calculations
+            tickers_by_date = {}
+            for month_str, stocks_data in cached_monthly_data.items():
+                # Extract just the tickers (top 5)
+                tickers = [ticker for ticker, score, rank in stocks_data]
+                tickers_by_date[month_str] = tickers
+            
+            # 4. Proceed with existing portfolio calculation logic
+            if not tickers_by_date:
+                return Response({"error": "No portfolio data available for the specified date range."}, 
+                              status=status.HTTP_400_BAD_REQUEST)
+            
+            # Load sentiment data for stock list extraction
             file = "reddit_sentiment_gemini_v3.csv"
             sentiment_data_path = os.path.join(settings.BASE_DIR, 'data', file)
-            print(f"Loading sentiment data from: {sentiment_data_path}")
             sentiment_data = RedditSentimentData(sentiment_data_path)
-            df_filtered = sentiment_data.filter_strategies(indicator)
-            tickers_by_date = sentiment_data.extract_portfolios(df_filtered)
-            stock_list = df_filtered.index.get_level_values('stock').unique().tolist()
+            
+            # Get all unique stocks from monthly selections
+            all_stocks = set()
+            for stocks in tickers_by_date.values():
+                all_stocks.update(stocks)
+            stock_list = list(all_stocks)
+            
+            print(f"📈 LOADING HISTORICAL DATA: {len(stock_list)} unique stocks")
+            
+            # Load historical price data
             historical_data_path = os.path.join(settings.BASE_DIR, 'data', 'stock_historical_prices_2019-2024')
-            df_portfolio = sentiment_data.load_historical_data(historical_data_path, stock_list, tickers_by_date, start_date, end_date)
+            df_portfolio = sentiment_data.load_historical_data(
+                historical_data_path, stock_list, tickers_by_date, start_date, end_date
+            )
+            
+            # Calculate portfolio returns
             file_path_index = os.path.join(settings.BASE_DIR, 'data', 'market_indexes_2019-2024', f'{market_index}.csv')
-            portfolio_returns = sentiment_data.get_portfolio_returns(file_path_index, df_portfolio, market_index, start_date, end_date)
+            portfolio_returns = sentiment_data.get_portfolio_returns(
+                file_path_index, df_portfolio, market_index, start_date, end_date
+            )
             
             # Convert portfolio index (date) to string
             portfolio_returns.index = portfolio_returns.index.strftime('%Y-%m-%d')
             # Reset index to turn the date index into a column
             portfolio_returns_reset = portfolio_returns.reset_index()
-            pprint(portfolio_returns_reset)
             # Replace NaN with None for JSON serialization
             portfolio_returns_reset = portfolio_returns_reset.replace({np.nan: None})
             # Convert DataFrame to list of dicts
@@ -141,45 +307,7 @@ class PortfolioReturnsViewSet(viewsets.ViewSet):
             tickers_by_date_list = [{'date': date, 'tickers': tickers} 
                                    for date, tickers in filtered_tickers_by_date.items()]
             
-            # Clean up any expired cache entries for this key
-            PortfolioCache.objects.filter(cache_key=cache_key).delete()
-            
-            # Create new cache entry (expires in 24 hours since portfolio calculation is expensive)
-            expires_at = now + timedelta(hours=24)
-            portfolio_cache = PortfolioCache.objects.create(
-                cache_key=cache_key,
-                start_date=pd.to_datetime(start_date).date(),
-                end_date=pd.to_datetime(end_date).date(),
-                market_index=market_index,
-                indicator=indicator,
-                expires_at=expires_at
-            )
-            
-            # Cache portfolio returns data
-            for return_data in portfolio_returns_list:
-                if return_data.get('index'):  # Ensure date is not None
-                    date_value = pd.to_datetime(return_data['index']).date()
-                    portfolio_ret = return_data.get('portfolio_return')
-                    benchmark_ret = return_data.get(market_index)  # Use dynamic market index name
-                    
-                    PortfolioReturn.objects.create(
-                        cache=portfolio_cache,
-                        date=date_value,
-                        portfolio_return=portfolio_ret,
-                        benchmark_return=benchmark_ret,
-                        cumulative_portfolio_return=portfolio_ret,  # These are already cumulative
-                        cumulative_benchmark_return=benchmark_ret   # These are already cumulative
-                    )
-            
-            # Cache tickers by date data
-            for ticker_date_data in tickers_by_date_list:
-                date = pd.to_datetime(ticker_date_data['date']).date()
-                for ticker in ticker_date_data['tickers']:
-                    PortfolioTicker.objects.create(
-                        cache=portfolio_cache,
-                        date=date,
-                        ticker=ticker
-                    )
+            print(f"✅ PORTFOLIO COMPLETE: {len(portfolio_returns_list)} return points | {len(tickers_by_date_list)} portfolio dates")
 
             return Response({
                 'portfolio_returns': portfolio_returns_list,
@@ -188,11 +316,16 @@ class PortfolioReturnsViewSet(viewsets.ViewSet):
                 'market_index': market_index,
                 'indicator': indicator,
                 'tickers_by_date': tickers_by_date_list,
-                'cached': False,
-                'cache_expires_at': expires_at.isoformat()
+                'cached': len(missing_months) == 0,  # True if all months were cached
+                'cache_info': {
+                    'total_months': len(cached_monthly_data),
+                    'cached_months': len(cached_monthly_data) - len(missing_months),
+                    'calculated_months': len(missing_months)
+                }
             })
             
         except Exception as e:
+            print(f"❌ PORTFOLIO ERROR: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 def index(request):
@@ -250,6 +383,8 @@ class NewsViewSet(viewsets.ViewSet):
             ).first()
             
             if cached_news:
+                print(f"📰 NEWS CACHE HIT: {normalized_tickers} | {cached_news.total_results} articles | Cached at: {cached_news.created_at}")
+                
                 # Return cached articles
                 articles = []
                 for article in cached_news.articles.all().order_by('article_order'):
@@ -272,6 +407,8 @@ class NewsViewSet(viewsets.ViewSet):
                 })
             
             # No valid cache found - fetch from API
+            print(f"🌐 NEWS FETCHING: {normalized_tickers} | Calling NewsAPI...")
+            
             from newsapi import NewsApiClient
             
             # Load API key from configuration file
@@ -346,6 +483,8 @@ class NewsViewSet(viewsets.ViewSet):
                 # Update total results in cache
                 news_cache.total_results = len(articles)
                 news_cache.save()
+                
+                print(f"💾 NEWS CACHED: {normalized_tickers} | Saved {len(articles)} articles | Expires: {expires_at}")
                 
                 return Response({
                     'status': 'success',

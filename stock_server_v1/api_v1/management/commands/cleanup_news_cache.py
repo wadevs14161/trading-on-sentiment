@@ -1,11 +1,11 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from api_v1.models import NewsCache, PortfolioCache
+from api_v1.models import NewsCache, MonthlyIndicatorCache
 from datetime import timedelta
 
 
 class Command(BaseCommand):
-    help = 'Clean up expired cache entries (news and portfolio) from the database'
+    help = 'Clean up expired cache entries (news and monthly indicators) from the database'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -22,7 +22,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--cache-type',
             type=str,
-            choices=['news', 'portfolio', 'all'],
+            choices=['news', 'indicators', 'all'],
             default='all',
             help='Type of cache to clean up (default: all)',
         )
@@ -38,8 +38,8 @@ class Command(BaseCommand):
         if cache_type in ['news', 'all']:
             self._handle_news_cache(cutoff_date, dry_run)
         
-        if cache_type in ['portfolio', 'all']:
-            self._handle_portfolio_cache(cutoff_date, dry_run)
+        if cache_type in ['indicators', 'all']:
+            self._handle_monthly_indicator_cache(cutoff_date, dry_run)
     
     def _handle_news_cache(self, cutoff_date, dry_run):
         expired_news_caches = NewsCache.objects.filter(expires_at__lt=cutoff_date)
@@ -63,28 +63,27 @@ class Command(BaseCommand):
                     self.style.SUCCESS(f'Successfully deleted {count} expired news cache entries')
                 )
     
-    def _handle_portfolio_cache(self, cutoff_date, dry_run):
-        expired_portfolio_caches = PortfolioCache.objects.filter(expires_at__lt=cutoff_date)
-        count = expired_portfolio_caches.count()
+    def _handle_monthly_indicator_cache(self, cutoff_date, dry_run):
+        expired_indicator_caches = MonthlyIndicatorCache.objects.filter(expires_at__lt=cutoff_date)
+        count = expired_indicator_caches.count()
         
         if count == 0:
             self.stdout.write(
-                self.style.SUCCESS('No expired portfolio cache entries found')
+                self.style.SUCCESS('No expired monthly indicator cache entries found')
             )
         else:
             if dry_run:
-                self.stdout.write(f'Would delete {count} expired portfolio cache entries:')
-                for cache in expired_portfolio_caches:
-                    returns_count = cache.returns.count()
-                    tickers_count = cache.tickers.count()
+                self.stdout.write(f'Would delete {count} expired monthly indicator cache entries:')
+                for cache in expired_indicator_caches:
+                    scores_count = cache.scores.count()
                     self.stdout.write(
-                        f'  - {cache.start_date} to {cache.end_date}, {cache.indicator}, {cache.market_index}'
+                        f'  - {cache.year}-{cache.month:02d}, {cache.market_index}'
                     )
                     self.stdout.write(
-                        f'    (expired: {cache.expires_at}, {returns_count} returns, {tickers_count} ticker entries)'
+                        f'    (expired: {cache.expires_at}, {scores_count} score entries)'
                     )
             else:
-                expired_portfolio_caches.delete()
+                expired_indicator_caches.delete()
                 self.stdout.write(
-                    self.style.SUCCESS(f'Successfully deleted {count} expired portfolio cache entries')
+                    self.style.SUCCESS(f'Successfully deleted {count} expired monthly indicator cache entries')
                 )

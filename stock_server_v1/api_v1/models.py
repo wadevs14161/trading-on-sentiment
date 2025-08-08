@@ -77,67 +77,44 @@ class NewsArticle(models.Model):
         return f"{self.title[:50]}... - {self.source}"
 
 
-class PortfolioCache(models.Model):
+class MonthlyIndicatorCache(models.Model):
     """
-    Cache for portfolio returns calculations
+    Cache for monthly indicator scores (engagement_ratio, total_sentiment, etc.)
+    This allows incremental building of portfolio calculations
     """
-    cache_key = models.CharField(max_length=255, unique=True)  # Hash of parameters
-    start_date = models.DateField()
-    end_date = models.DateField()
-    market_index = models.CharField(max_length=10)
-    indicator = models.CharField(max_length=50)
+    month_year = models.DateField()  # First day of the month (e.g., 2021-04-01)
+    indicator = models.CharField(max_length=50)  # engagement_ratio, total_sentiment, etc.
     created_at = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateTimeField()  # Cache expiration time
+    expires_at = models.DateTimeField()  # Cache expiration time (longer than portfolio cache)
     
     class Meta:
         ordering = ['-created_at']
+        unique_together = ('month_year', 'indicator')
         indexes = [
-            models.Index(fields=['cache_key']),
+            models.Index(fields=['month_year', 'indicator']),
             models.Index(fields=['expires_at']),
-            models.Index(fields=['start_date', 'end_date']),
-            models.Index(fields=['indicator']),
         ]
 
     def __str__(self):
-        return f"PortfolioCache({self.start_date} to {self.end_date}, {self.indicator}, {self.market_index})"
+        return f"MonthlyIndicatorCache({self.month_year.strftime('%Y-%m')}, {self.indicator})"
 
 
-class PortfolioReturn(models.Model):
+class MonthlyIndicatorScore(models.Model):
     """
-    Individual portfolio return data points
+    Individual stock scores for a specific month and indicator
     """
-    cache = models.ForeignKey(PortfolioCache, on_delete=models.CASCADE, related_name='returns')
-    date = models.DateField()
-    portfolio_return = models.FloatField(null=True, blank=True)
-    benchmark_return = models.FloatField(null=True, blank=True)
-    cumulative_portfolio_return = models.FloatField(null=True, blank=True)
-    cumulative_benchmark_return = models.FloatField(null=True, blank=True)
-    
-    class Meta:
-        ordering = ['cache', 'date']
-        unique_together = ('cache', 'date')
-        indexes = [
-            models.Index(fields=['cache', 'date']),
-        ]
-
-    def __str__(self):
-        return f"PortfolioReturn({self.date}): Portfolio={self.cumulative_portfolio_return:.2%}, Benchmark={self.cumulative_benchmark_return:.2%}"
-
-
-class PortfolioTicker(models.Model):
-    """
-    Tickers selected for portfolio on specific dates
-    """
-    cache = models.ForeignKey(PortfolioCache, on_delete=models.CASCADE, related_name='tickers')
-    date = models.DateField()
+    cache = models.ForeignKey(MonthlyIndicatorCache, on_delete=models.CASCADE, related_name='scores')
     ticker = models.CharField(max_length=10)
+    score_value = models.FloatField()  # Aggregated monthly score for the indicator
+    rank = models.PositiveIntegerField()  # Rank within the month (1=best, 2=second, etc.)
     
     class Meta:
-        ordering = ['cache', 'date', 'ticker']
-        unique_together = ('cache', 'date', 'ticker')
+        ordering = ['cache', 'rank']
+        unique_together = ('cache', 'ticker')
         indexes = [
-            models.Index(fields=['cache', 'date']),
+            models.Index(fields=['cache', 'rank']),
+            models.Index(fields=['ticker']),
         ]
 
     def __str__(self):
-        return f"PortfolioTicker({self.date}): {self.ticker}"
+        return f"MonthlyIndicatorScore({self.cache.month_year.strftime('%Y-%m')}, {self.ticker}): {self.score_value:.4f} (rank {self.rank})"
