@@ -135,3 +135,84 @@ def index(request):
     }
 
     return render(request, template_name='api_v1/index.html', context=context)
+
+
+class NewsViewSet(viewsets.ViewSet):
+    def list(self, request):
+        """
+        Get recent news for a list of stock tickers
+        """
+        tickers = request.query_params.get('tickers', '')
+        
+        if not tickers:
+            return Response({"error": "Please provide tickers parameter."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Import NewsApiClient here to avoid import errors if not installed
+            from newsapi import NewsApiClient
+            import json
+            
+            # Load API key from configuration file
+            config_path = os.path.join(settings.BASE_DIR, '..', '.api_keys.json')
+            try:
+                with open(config_path, 'r') as config_file:
+                    config = json.load(config_file)
+                api_key = config['news_api_key']
+            except FileNotFoundError:
+                return Response({"error": "API keys configuration file not found."},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except KeyError:
+                return Response({"error": "News API key not found in configuration."},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            # Initialize NewsApiClient
+            newsapi = NewsApiClient(api_key=api_key)
+            
+            # Parse tickers (comma-separated)
+            ticker_list = [ticker.strip().upper() for ticker in tickers.split(',')]
+            
+            # Create search query from all tickers
+            search_query = ' OR '.join(ticker_list)
+            
+            # Get recent news
+            all_articles = newsapi.get_everything(
+                q=search_query,
+                language='en',
+                sort_by='publishedAt',
+                page_size=5,
+                page=1
+            )
+            
+            if all_articles['status'] == 'ok' and all_articles['totalResults'] > 0:
+                # Format articles for response
+                articles = []
+                for article in all_articles['articles']:
+                    articles.append({
+                        'title': article['title'],
+                        'source': article['source']['name'],
+                        'publishedAt': article['publishedAt'],
+                        'url': article['url'],
+                        'description': article['description'],
+                        'urlToImage': article.get('urlToImage', '')
+                    })
+                
+                return Response({
+                    'status': 'success',
+                    'articles': articles,
+                    'totalResults': all_articles['totalResults'],
+                    'tickers': ticker_list
+                })
+            else:
+                return Response({
+                    'status': 'no_results',
+                    'message': 'No recent news found for the specified tickers.',
+                    'tickers': ticker_list
+                })
+                
+        except ImportError:
+            return Response({"error": "NewsAPI library not installed."},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({"error": f"Error fetching news: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

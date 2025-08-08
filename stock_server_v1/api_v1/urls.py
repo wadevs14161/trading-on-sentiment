@@ -2,10 +2,12 @@ from django.urls import path, include
 from rest_framework import routers
 from .views import StockPriceHistoryViewSet
 from .views import PortfolioReturnsViewSet
+from .views import NewsViewSet
 
 router = routers.DefaultRouter()
 router.register(r'stock-price-history', StockPriceHistoryViewSet, basename='stock-price-history')
 router.register(r'portfolio-returns', PortfolioReturnsViewSet, basename='portfolio-returns')
+router.register(r'news', NewsViewSet, basename='news')
 
 urlpatterns = [
     # path('', include(router.urls)),
