@@ -46,6 +46,16 @@ class PortfolioReturnsViewSet(viewsets.ViewSet):
         market_index = request.query_params.get('market_index', 'QQQ')
         indicator = request.query_params.get('indicator', 'engagement_ratio')
 
+        # Enforce date range limits - do not exceed the available data range
+        max_start_date = '2021-01-28'
+        max_end_date = '2021-08-02'
+        
+        # Clamp the dates to the available range
+        if start_date < max_start_date:
+            start_date = max_start_date
+        if end_date > max_end_date:
+            end_date = max_end_date
+
         try:
             # file = "reddit_sentiment_data2.csv"
             file = "reddit_sentiment_gemini_v3.csv"

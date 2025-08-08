@@ -20,26 +20,40 @@ class RedditSentimentData:
 
         # Convert 'date' column to datetime format
         df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
-        # # Set multiple index for date and stock
-        # df = df.set_index(['date', 'stock'])
-        # # Add up sentiment score of title and body
-        # df['total_sentiment'] = df['title_sentiment'] + df['body_sentiment']
-        # df = df.groupby(['date', 'stock']).agg('sum')
-        # # Set score to 1 if it is less than 1
-        # df['score'] = np.where(df['score'] < 1, 1, df['score'])
-        # # Add column engagement_ratio
-        # df['engagement_ratio'] = df['comms_num'] / df['score']
-        # # Convert date string to datetime format
-        # df = df.reset_index()
+        
+        # Check if the required columns exist, if not create them
+        if 'total_sentiment' not in df.columns:
+            # Look for sentiment columns - they might have different names
+            title_sentiment_cols = [col for col in df.columns if 'title' in col.lower() and 'sentiment' in col.lower()]
+            body_sentiment_cols = [col for col in df.columns if 'body' in col.lower() and 'sentiment' in col.lower()]
+            
+            if title_sentiment_cols and body_sentiment_cols:
+                df['total_sentiment'] = df[title_sentiment_cols[0]] + df[body_sentiment_cols[0]]
+            else:
+                print(f"Warning: Could not find sentiment columns. Available columns: {df.columns.tolist()}")
+                # Create dummy sentiment if not available
+                df['total_sentiment'] = 0.0
+        
+        # Set minimum score to 1 to avoid division by zero
+        df['score'] = np.where(df['score'] < 1, 1, df['score'])
+        
+        # Calculate engagement ratio if not exists
+        if 'engagement_ratio' not in df.columns:
+            df['engagement_ratio'] = df['comms_num'] / df['score']
+        
+        # Set index before grouping
         df = df.set_index(['date', 'stock'])
-
+        
+        # Remove any rows with NaN values in the indicator columns
+        df = df.dropna(subset=['total_sentiment', 'engagement_ratio', 'comms_num', 'score'])
+        
         return df
 
-    def filter_strategies(self, indicator: str) -> pd.DataFrame:
+    def filter_strategies(self, indicator: str, debug: bool = False) -> pd.DataFrame:
         """
         Aggregate Monthly and calculate average sentiment for the month
         Filter data using the specified indicator
-        - Top 5 "Sentiment" stocks
+        - Top 5 "Sentiment" stocks (or fewer if not enough data available)
         - Top 5 "Engagement ratio" stocks
         """
         df_filtered = pd.DataFrame()
@@ -52,19 +66,48 @@ class RedditSentimentData:
         }
         if indicator in agg_map:
             agg_func = agg_map[indicator]
-            # Aggregate monthly by indicator
+            
+            # Check if the indicator column exists
+            if indicator not in self.df_sentiment.columns:
+                print(f"Warning: Indicator '{indicator}' not found in data. Available columns: {self.df_sentiment.columns.tolist()}")
+                return df_filtered
+            
+            # Aggregate monthly by indicator, removing NaN values
             df_agg = (
                 self.df_sentiment.reset_index('stock')
                 .groupby([pd.Grouper(freq='ME'), 'stock'])[[indicator]]
                 .agg(agg_func)
+                .dropna()  # Remove any NaN results from aggregation
             )
-            # Rank based on specific indicator
+            
+            if debug:
+                print(f"Debug: Total stocks per month after aggregation:")
+                stocks_per_month = df_agg.groupby(level=0).size()
+                print(stocks_per_month)
+            
+            # Rank based on specific indicator (method='first' handles ties consistently)
             df_agg['rank'] = (
                 df_agg.groupby(level=0)[indicator]
-                .transform(lambda x: x.rank(ascending=False).astype(int))
+                .transform(lambda x: x.rank(ascending=False, method='first').astype(int))
             )
-            # Filter out top N ranking
+            
+            if debug:
+                print(f"Debug: Rankings for each month:")
+                for date in df_agg.index.get_level_values(0).unique():
+                    month_data = df_agg.xs(date, level=0).sort_values('rank')
+                    available_stocks = len(month_data)
+                    selected_stocks = min(5, available_stocks)
+                    print(f"{date.strftime('%Y-%m')}: {available_stocks} stocks available, selecting top {selected_stocks}")
+                    print(month_data[['rank']].head(5))
+            
+            # Filter out top N ranking - get top 5 or all available if fewer than 5
             df_filtered = df_agg[df_agg['rank'] <= 5].copy()
+            
+            if debug:
+                print(f"Debug: Final selected stocks per month:")
+                final_per_month = df_filtered.groupby(level=0).size()
+                print(final_per_month)
+            
             # Adjust date to be the first day of the month
             df_filtered = df_filtered.reset_index('stock')
             df_filtered.index = df_filtered.index + pd.DateOffset(1)
@@ -114,10 +157,13 @@ class RedditSentimentData:
             try:
                 # file_path = f'data/stock_historical_prices_2019-2024/{ticker}.csv'
                 file_path = f'{dir_path}/{ticker}.csv'
-                df_temp = pd.read_csv(file_path).set_index('Price')[start:end]['Close'].to_frame(ticker)
+                # Read CSV, skip first 3 rows (header, ticker, date labels), use manual column names
+                df_temp = pd.read_csv(file_path, skiprows=3, names=['Date', 'Close', 'High', 'Low', 'Open', 'Volume'])
+                df_temp['Date'] = pd.to_datetime(df_temp['Date'])
+                df_temp = df_temp.set_index('Date')[start:end]['Close'].to_frame(ticker)
                 # print(f'df_temp: {df_temp}')
-            except:
-                print(f'Prices of {ticker} might not exist, let it be NaN')
+            except Exception as e:
+                print(f'Prices of {ticker} might not exist, let it be NaN. Error: {e}')
                 # If df_temp cannot be read, let the ticker be NaN
                 df_temp = pd.DataFrame(index=pd.date_range(start, end), columns=[ticker])
                 df_temp[ticker] = np.nan
@@ -150,7 +196,9 @@ class RedditSentimentData:
                               end_date: str) -> pd.DataFrame:
         # Load prices of market index and calculate returns to compare to our strategy
         # file_path = f'data/market_indexes_2019-2024/{market_index}.csv'
-        benchmark_index = pd.read_csv(file_path).set_index('Price')[2:][start_date:end_date]
+        benchmark_index = pd.read_csv(file_path, skiprows=3, names=['Date', 'Close', 'High', 'Low', 'Open', 'Volume'])
+        benchmark_index['Date'] = pd.to_datetime(benchmark_index['Date'])
+        benchmark_index = benchmark_index.set_index('Date')[start_date:end_date]
         # Set index name to 'index'
         benchmark_index.index.name = 'index'
         benchmark_index = benchmark_index.astype('float64')

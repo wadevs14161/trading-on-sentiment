@@ -100,16 +100,28 @@ function App() {
           {
             label: 'Portfolio Return',
             data: portfolioReturnsArr,
-            borderColor: 'rgba(75,192,192,1)',
-            backgroundColor: 'rgba(75,192,192,0.2)',
-            tension: 0.1,
+            borderColor: '#20c997', // Teal color for portfolio
+            backgroundColor: 'rgba(32, 201, 151, 0.1)',
+            borderWidth: 3,
+            tension: 0.2,
+            pointRadius: 0, // Hide individual points for cleaner look
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: '#20c997',
+            pointHoverBorderColor: '#ffffff',
+            pointHoverBorderWidth: 2
           },
           {
             label: benchmark,
             data: marketIndexReturns,
-            borderColor: 'rgba(255,99,132,1)',
-            backgroundColor: 'rgba(255,99,132,0.2)',
-            tension: 0.1,
+            borderColor: '#6f42c1', // Purple color for benchmark
+            backgroundColor: 'rgba(111, 66, 193, 0.1)',
+            borderWidth: 3,
+            tension: 0.2,
+            pointRadius: 0, // Hide individual points for cleaner look
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: '#6f42c1',
+            pointHoverBorderColor: '#ffffff',
+            pointHoverBorderWidth: 2
           },
         ],
       });
@@ -152,87 +164,133 @@ function App() {
                 minHeight: '100vh',
                 backgroundColor: '#f8f9fa',
               }}>
+              {/* Portfolio Performance Section */}
               <Box sx={{ 
-                textAlign: 'center', 
                 width: '100%', 
-                mb: 3,
-                mt: 2,
-                p: 3,
+                mb: 4,
+                p: 4,
                 backgroundColor: '#ffffff',
-                borderRadius: 2,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                borderRadius: 3,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                border: '1px solid #e9ecef'
+              }}>
+                {/* Section Header */}
+                <Box sx={{ textAlign: 'center', mb: 4 }}>
+                  <Typography variant="h4" sx={{ 
+                    fontWeight: 700, 
+                    color: '#2c3e50',
+                    mb: 1
+                  }}>
+                    Portfolio Performance Analysis
+                  </Typography>
+                  <Typography variant="h6" sx={{ 
+                    color: '#6c757d',
+                    fontWeight: 400
+                  }}>
+                    {indicatorLabels[indicator] || indicator} Strategy vs {marketIndexLabels[benchmark]}
+                  </Typography>
+                </Box>
+
+                {/* Chart */}
+                <Box sx={{ mb: 4 }}>
+                  <BenchmarkChart chartData={chartData} benchmark={benchmark} loading={loading} />
+                </Box>
+
+                {/* Integrated Key Metrics */}
+                <Box sx={{ 
+                  mt: 3,
+                  p: 3,
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: 2,
+                  border: '1px solid #e9ecef'
+                }}>
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 600, 
+                    color: '#2c3e50',
+                    mb: 3,
+                    textAlign: 'center'
+                  }}>
+                    Performance Summary
+                  </Typography>
+                  {metricsLoading ? (
+                    <Typography sx={{ color: '#6c757d', textAlign: 'center' }}>Calculating metrics...</Typography>
+                  ) : (
+                    <Box sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-around',
+                      flexWrap: 'wrap',
+                      gap: 3
+                    }}>
+                      {/* Peak Performance Metric */}
+                      <Box sx={{ textAlign: 'center', minWidth: '250px' }}>
+                        <Typography variant="subtitle2" sx={{ 
+                          color: '#6c757d',
+                          fontWeight: 500,
+                          mb: 1
+                        }}>
+                          Peak Return
+                        </Typography>
+                        <Typography variant="h5" sx={{ 
+                          color: '#28a745',
+                          fontWeight: 700,
+                          mb: 0.5
+                        }}>
+                          {highestReturn !== null ? (highestReturn * 100).toFixed(2) : '--'}%
+                        </Typography>
+                        <Typography variant="body2" sx={{ 
+                          color: '#495057'
+                        }}>
+                          on {highestReturnDate}
+                        </Typography>
+                      </Box>
+
+                      {/* Outperformance Metric */}
+                      <Box sx={{ textAlign: 'center', minWidth: '250px' }}>
+                        <Typography variant="subtitle2" sx={{ 
+                          color: '#6c757d',
+                          fontWeight: 500,
+                          mb: 1
+                        }}>
+                          Days Outperforming {benchmark}
+                        </Typography>
+                        <Typography variant="h5" sx={{ 
+                          color: '#28a745',
+                          fontWeight: 700
+                        }}>
+                          {percentageDaysGreaterThanMarket !== null ? percentageDaysGreaterThanMarket.toFixed(1) : '--'}%
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+
+              {/* Portfolio Holdings Section */}
+              <Box sx={{ 
+                width: '100%', 
+                p: 4,
+                backgroundColor: '#ffffff',
+                borderRadius: 3,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
                 border: '1px solid #e9ecef'
               }}>
                 <Typography variant="h5" sx={{ 
                   fontWeight: 600, 
                   color: '#2c3e50',
-                  mb: 1
+                  mb: 1,
+                  textAlign: 'center'
                 }}>
-                  Portfolio vs. {marketIndexLabels[benchmark]}
+                  Portfolio Holdings Timeline
                 </Typography>
                 <Typography variant="subtitle1" sx={{ 
                   color: '#6c757d',
-                  fontSize: '1rem'
+                  textAlign: 'center',
+                  mb: 3
                 }}>
-                  ({indicatorLabels[indicator] || indicator})
+                  Monthly <b>Top 5</b> stock selections based on sentiment analysis
                 </Typography>
-              </Box>
-              <BenchmarkChart chartData={chartData} benchmark={benchmark} loading={loading} />
-              <Box sx={{ 
-                textAlign: 'center', 
-                width: '100%', 
-                mt: 4,
-                mb: 2,
-                p: 3,
-                backgroundColor: '#ffffff',
-                borderRadius: 2,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                border: '1px solid #e9ecef'
-              }}>
-                <Typography variant="h6" sx={{ 
-                  fontWeight: 600, 
-                  color: '#2c3e50',
-                  mb: 2
-                }}>
-                  KEY METRICS
-                </Typography>
-                {/* CHANGED: Use metricsLoading instead of checking for data */}
-                {metricsLoading ? (
-                  <Typography sx={{ color: '#6c757d', mt: 3 }}>Loading metrics...</Typography>
-                ) : (
-                  <Box sx={{ textAlign: 'left', maxWidth: 600, mx: 'auto' }}>
-                    <Typography sx={{ mb: 2, color: '#495057' }}>
-                      Highest return happened on <strong style={{ color: '#28a745' }}>{highestReturnDate}</strong> with a return of <strong style={{ color: '#28a745' }}>{highestReturn !== null ? (highestReturn * 100).toFixed(2) : '--'}%</strong>
-                    </Typography>
-                    <Typography sx={{ color: '#495057' }}>
-                      Days outperforming {benchmark}: <strong style={{ color: '#28a745' }}>
-                        {percentageDaysGreaterThanMarket !== null ? percentageDaysGreaterThanMarket.toFixed(2) : '--'}%
-                      </strong>
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-              <Box sx={{ 
-                textAlign: 'center', 
-                width: '100%', 
-                mt: 2,
-                mb: 2,
-                p: 3,
-                backgroundColor: '#ffffff',
-                borderRadius: 2,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                border: '1px solid #e9ecef'
-              }}>
-                <Typography variant="h6" sx={{ 
-                  fontWeight: 600, 
-                  color: '#2c3e50',
-                  mb: 2
-                }}>
-                  TICKERS BY DATE
-                </Typography>
-                {/* CHANGED: Use tickersLoading instead of checking for data */}
                 {tickersLoading ? (
-                  <Typography sx={{ color: '#6c757d', mt: 3 }}>Loading portfolio...</Typography>
+                  <Typography sx={{ color: '#6c757d', textAlign: 'center', py: 4 }}>Loading portfolio composition...</Typography>
                 ) : (
                   <TickersByDateTable tickersByDate={tickersByDate} />
                 )}
