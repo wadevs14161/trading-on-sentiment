@@ -15,6 +15,9 @@ stock_server_v1/data/.reddit_credentials.json
 # Database credential
 stock_server_v1/.db_credential.json
 
+# API Keys
+.api_keys.json
+
 # pyc files
 *.pyc
 __pycache__/

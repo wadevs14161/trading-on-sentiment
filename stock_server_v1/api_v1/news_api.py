@@ -1,7 +1,22 @@
 from newsapi import NewsApiClient
+import json
+import os
+
+# Load API key from configuration file
+config_path = os.path.join(os.path.dirname(__file__), '..', '..', '.api_keys.json')
+try:
+    with open(config_path, 'r') as config_file:
+        config = json.load(config_file)
+    api_key = config['news_api_key']
+except FileNotFoundError:
+    print("Error: .api_keys.json file not found. Please create it using .api_keys.json.template")
+    exit(1)
+except KeyError:
+    print("Error: 'news_api_key' not found in .api_keys.json")
+    exit(1)
 
 # Init
-newsapi = NewsApiClient(api_key='5b85be58f5544f198fb70475e43acf81')
+newsapi = NewsApiClient(api_key=api_key)
 
 # Get top 5 newest news about PLTR (Palantir)
 all_articles = newsapi.get_everything(
