@@ -168,20 +168,6 @@ class RedditSentimentData:
 
         return portfolio_cumulative_return
     
-    def plot_portfolio_returns(self, df_portfolio: pd.DataFrame) -> None:
-        """
-        Plot the portfolio returns.
-        """
-        plt.figure(figsize=(10, 6))
-        for col in df_portfolio.columns:
-            plt.plot(df_portfolio.index, df_portfolio[col], label=col)
-        plt.xlabel('Date')
-        plt.ylabel('Cumulative Return')
-        plt.title('Portfolio vs Benchmark Cumulative Return')
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        plt.show()
 
 
 if __name__ == "__main__":

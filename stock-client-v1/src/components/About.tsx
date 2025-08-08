@@ -29,12 +29,13 @@ const About = () => (
             sx={{
                 p: 4, // Padding inside the paper
                 borderRadius: 2, // Rounded corners
-                boxShadow: 3, // MUI shadow effect
-                bgcolor: 'background.paper', // Uses the theme's paper background
-                color: 'text.primary', // Ensures text color is theme-appropriate
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)', // Subtle shadow
+                bgcolor: '#ffffff', // Clean white background
+                color: '#2c3e50', // Professional text color
+                border: '1px solid #e9ecef' // Subtle border
             }}
         >
-            <Typography variant="h4" component="h1" gutterBottom sx={{ color: 'primary.light', mb: 3 }}>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ color: '#2c3e50', mb: 3, fontWeight: 600 }}>
                 About Trading on Sentiment
             </Typography>
 

@@ -9,6 +9,7 @@ from .RedditSentimentData import RedditSentimentData
 from django.conf import settings
 import os
 import numpy as np
+import pandas as pd
 from pprint import pprint
 
 class StockPriceHistoryViewSet(viewsets.ViewSet):
@@ -71,8 +72,20 @@ class PortfolioReturnsViewSet(viewsets.ViewSet):
             # pprint(portfolio_returns_list)
 
             # Also return tickers_by_date which is a dict of dates and their corresponding stock tickers {'date': ['AAPL', 'GOOGL'], ...}
-            # Convert tickers_by_date to a list of dicts for JSON serialization
-            tickers_by_date_list = [{'date': date, 'tickers': tickers} for date, tickers in tickers_by_date.items()]
+            # Filter tickers_by_date to only include dates within the selected date range
+            start_date_dt = pd.to_datetime(start_date)
+            end_date_dt = pd.to_datetime(end_date)
+            
+            filtered_tickers_by_date = {}
+            for date_str, tickers in tickers_by_date.items():
+                date_dt = pd.to_datetime(date_str)
+                # Include portfolio rebalancing dates that fall within or before the selected period
+                # (since a portfolio selected on date X is held until the next rebalancing)
+                if start_date_dt <= date_dt <= end_date_dt:
+                    filtered_tickers_by_date[date_str] = tickers
+            
+            # Convert filtered tickers_by_date to a list of dicts for JSON serialization
+            tickers_by_date_list = [{'date': date, 'tickers': tickers} for date, tickers in filtered_tickers_by_date.items()]
 
 
             return Response({

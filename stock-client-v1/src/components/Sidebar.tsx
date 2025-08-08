@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Drawer, TextField, MenuItem, Box, Button } from '@mui/material';
+import { Drawer, TextField, MenuItem, Box, Button, Typography } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 
 interface SidebarProps {
@@ -54,53 +54,101 @@ const Sidebar = ({
           width: '240px',
           top: '64px', // CHANGED: offset by AppBar height (default AppBar is 64px tall)
           height: 'calc(100% - 64px)', // CHANGED: fill remaining height
+          backgroundColor: '#ffffff',
+          borderRight: '1px solid #e9ecef',
+          boxShadow: 'none'
         },
       }}
     >
-      <Box sx={{ p: 2 }}>
-        <h2 style={{
-          fontSize: '1 rem',
-          fontWeight: 700,
-          textAlign: 'center',
-          margin: 0,
-          marginBottom: '1.5rem',
-          letterSpacing: '0.03em',
-          color: '#1976d2',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <FilterListIcon sx={{ fontSize: '1.6rem', marginRight: '0.5rem' }} />
-          Portfolio Filter
-        </h2>
-        <Box sx={{ mb: 2 }}>
-          <label style={{ fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', display: 'block', textAlign: 'center' }}>Date</label>
+      <Box sx={{ p: 3, backgroundColor: '#f8f9fa', borderBottom: '1px solid #e9ecef' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <FilterListIcon sx={{ mr: 1, color: '#6c757d' }} />
+          <Typography variant="h6" sx={{ color: '#2c3e50', fontWeight: 600 }}>
+            Portfolio Filter
+          </Typography>
+        </Box>
+      </Box>
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ 
+            fontSize: '0.875rem', 
+            fontWeight: '600', 
+            marginBottom: '0.75rem', 
+            display: 'block', 
+            color: '#495057' 
+          }}>
+            Date Range
+          </Typography>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             {/* CHANGED: Use pendingDate and setPendingDate */}
             <TextField
               type="date"
               variant="outlined"
+              size="small"
               value={pendingDate.start}
               onChange={(e) => setPendingDate({ ...pendingDate, start: e.target.value })}
-              sx={{ input: { color: 'black', backgroundColor: 'white' }, width: '50%' }}
+              sx={{ 
+                width: '50%',
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'white',
+                  '& fieldset': {
+                    borderColor: '#dee2e6',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#495057',
+                  },
+                }
+              }}
             />
             <TextField
               type="date"
               variant="outlined"
+              size="small"
               value={pendingDate.end}
               onChange={(e) => setPendingDate({ ...pendingDate, end: e.target.value })}
-              sx={{ input: { color: 'black', backgroundColor: 'white' }, width: '50%' }}
+              sx={{ 
+                width: '50%',
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'white',
+                  '& fieldset': {
+                    borderColor: '#dee2e6',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#495057',
+                  },
+                }
+              }}
             />
           </div>
         </Box>
-        <Box sx={{ mb: 2 }}>
-          <label style={{ fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', display: 'block', textAlign: 'center' }}>Indicator</label>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ 
+            fontSize: '0.875rem', 
+            fontWeight: '600', 
+            marginBottom: '0.75rem', 
+            display: 'block', 
+            color: '#495057' 
+          }}>
+            Indicator
+          </Typography>
           <TextField
             select
             variant="outlined"
+            size="small"
             value={pendingIndicator}
             onChange={(e) => setPendingIndicator(e.target.value)}
-            sx={{ input: { color: 'black', backgroundColor: 'white' }, width: '100%' }}
+            sx={{ 
+              width: '100%',
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: 'white',
+                '& fieldset': {
+                  borderColor: '#dee2e6',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#495057',
+                },
+              }
+            }}
           >
             <MenuItem value="total_sentiment">Sentiment</MenuItem>
             <MenuItem value="score">Score of Posts</MenuItem>
@@ -108,14 +156,34 @@ const Sidebar = ({
             <MenuItem value="engagement_ratio">Engagement Ratio</MenuItem>
           </TextField>
         </Box>
-        <Box>
-          <label style={{ fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem', display: 'block', textAlign: 'center' }}>Market Index</label>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="subtitle2" sx={{ 
+            fontSize: '0.875rem', 
+            fontWeight: '600', 
+            marginBottom: '0.75rem', 
+            display: 'block', 
+            color: '#495057' 
+          }}>
+            Market Index
+          </Typography>
           <TextField
             select
             variant="outlined"
+            size="small"
             value={pendingBenchmark}
             onChange={(e) => setPendingBenchmark(e.target.value)}
-            sx={{ input: { color: 'black', backgroundColor: 'white' }, width: '100%' }}
+            sx={{ 
+              width: '100%',
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: 'white',
+                '& fieldset': {
+                  borderColor: '#dee2e6',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#495057',
+                },
+              }
+            }}
           >
             <MenuItem value="QQQ">QQQ</MenuItem>
             <MenuItem value="AAPL">Apple</MenuItem>
@@ -124,22 +192,26 @@ const Sidebar = ({
         {/* CHANGED: Add Apply button */}
         <Button
           variant="contained"
-          color="primary"
           fullWidth
           onClick={handleApply}
           disabled={!changed}
           sx={{
-            mt: 2,
-            backgroundColor: changed ? '#1976d2' : '#C0C0C0 !important', // much lighter grey when disabled
-            color: changed ? '#fff' : '#bdbdbd',
-            cursor: changed ? 'pointer' : 'not-allowed',
-            boxShadow: changed ? 3 : 0,
+            mt: 1,
+            py: 1.5,
+            backgroundColor: changed ? '#495057' : '#e9ecef',
+            color: changed ? '#ffffff' : '#6c757d',
+            fontWeight: 600,
+            textTransform: 'none',
+            fontSize: '0.95rem',
+            boxShadow: changed ? '0 2px 8px rgba(73, 80, 87, 0.2)' : 'none',
             '&:hover': {
-              backgroundColor: changed ? '#115293' : '#e0e0e0',
-              color: changed ? '#fff' : '#888',
-              cursor: changed ? 'pointer' : 'not-allowed',
+              backgroundColor: changed ? '#343a40' : '#e9ecef',
+              boxShadow: changed ? '0 4px 12px rgba(73, 80, 87, 0.3)' : 'none',
             },
-            transition: 'background 0.2s, color 0.2s, box-shadow 0.2s',
+            '&:disabled': {
+              backgroundColor: '#e9ecef',
+              color: '#6c757d',
+            }
           }}
         >
           Apply

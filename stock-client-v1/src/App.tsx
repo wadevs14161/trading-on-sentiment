@@ -4,7 +4,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import {
   CssBaseline,
   Box,
-  Toolbar
+  Toolbar,
+  Typography
 } from '@mui/material';
 import NavBar from './components/NavBar';
 import Sidebar from './components/Sidebar';
@@ -149,39 +150,93 @@ function App() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 minHeight: '100vh',
+                backgroundColor: '#f8f9fa',
               }}>
-              <h2 style={{ textAlign: 'center', width: '100%', margin: '20px 0' }}>
-                <strong>Portfolio vs. {marketIndexLabels[benchmark]}</strong><br></br>
-                <label style={{ fontSize: 'medium'}}> ({indicatorLabels[indicator] || indicator})</label>
-              </h2>
+              <Box sx={{ 
+                textAlign: 'center', 
+                width: '100%', 
+                mb: 3,
+                mt: 2,
+                p: 3,
+                backgroundColor: '#ffffff',
+                borderRadius: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                border: '1px solid #e9ecef'
+              }}>
+                <Typography variant="h5" sx={{ 
+                  fontWeight: 600, 
+                  color: '#2c3e50',
+                  mb: 1
+                }}>
+                  Portfolio vs. {marketIndexLabels[benchmark]}
+                </Typography>
+                <Typography variant="subtitle1" sx={{ 
+                  color: '#6c757d',
+                  fontSize: '1rem'
+                }}>
+                  ({indicatorLabels[indicator] || indicator})
+                </Typography>
+              </Box>
               <BenchmarkChart chartData={chartData} benchmark={benchmark} loading={loading} />
-              <h2 style={{ textAlign: 'center', width: '100%', margin: '20px 0' }}>
-                KEY METRICS
-              </h2>
-              {/* CHANGED: Use metricsLoading instead of checking for data */}
-              {metricsLoading ? (
-                <p style={{ textAlign: 'center', color: '#888', marginTop: 24 }}>Loading metrics...</p>
-              ) : (
-                <ul>
-                  <li>
-                    Highest return happened on <strong>{highestReturnDate}</strong> with a return of <strong style={{ color: '#50C878' }}>{highestReturn !== null ? (highestReturn * 100).toFixed(2) : '--'}%</strong>
-                  </li>
-                  <li>
-                    Days outperforming {benchmark}: <strong style={{ color: '#50C878' }}>
-                      {percentageDaysGreaterThanMarket !== null ? percentageDaysGreaterThanMarket.toFixed(2) : '--'}%
-                    </strong>
-                  </li>
-                </ul>
-              )}
-              <h2 style={{ textAlign: 'center', width: '100%', margin: '20px 0' }}>
-                TICKERS BY DATE
-              </h2>
-              {/* CHANGED: Use tickersLoading instead of checking for data */}
-              {tickersLoading ? (
-                <p style={{ textAlign: 'center', color: '#888', marginTop: 24 }}>Loading portfolio...</p>
-              ) : (
-                <TickersByDateTable tickersByDate={tickersByDate} />
-              )}
+              <Box sx={{ 
+                textAlign: 'center', 
+                width: '100%', 
+                mt: 4,
+                mb: 2,
+                p: 3,
+                backgroundColor: '#ffffff',
+                borderRadius: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                border: '1px solid #e9ecef'
+              }}>
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 600, 
+                  color: '#2c3e50',
+                  mb: 2
+                }}>
+                  KEY METRICS
+                </Typography>
+                {/* CHANGED: Use metricsLoading instead of checking for data */}
+                {metricsLoading ? (
+                  <Typography sx={{ color: '#6c757d', mt: 3 }}>Loading metrics...</Typography>
+                ) : (
+                  <Box sx={{ textAlign: 'left', maxWidth: 600, mx: 'auto' }}>
+                    <Typography sx={{ mb: 2, color: '#495057' }}>
+                      Highest return happened on <strong style={{ color: '#28a745' }}>{highestReturnDate}</strong> with a return of <strong style={{ color: '#28a745' }}>{highestReturn !== null ? (highestReturn * 100).toFixed(2) : '--'}%</strong>
+                    </Typography>
+                    <Typography sx={{ color: '#495057' }}>
+                      Days outperforming {benchmark}: <strong style={{ color: '#28a745' }}>
+                        {percentageDaysGreaterThanMarket !== null ? percentageDaysGreaterThanMarket.toFixed(2) : '--'}%
+                      </strong>
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+              <Box sx={{ 
+                textAlign: 'center', 
+                width: '100%', 
+                mt: 2,
+                mb: 2,
+                p: 3,
+                backgroundColor: '#ffffff',
+                borderRadius: 2,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                border: '1px solid #e9ecef'
+              }}>
+                <Typography variant="h6" sx={{ 
+                  fontWeight: 600, 
+                  color: '#2c3e50',
+                  mb: 2
+                }}>
+                  TICKERS BY DATE
+                </Typography>
+                {/* CHANGED: Use tickersLoading instead of checking for data */}
+                {tickersLoading ? (
+                  <Typography sx={{ color: '#6c757d', mt: 3 }}>Loading portfolio...</Typography>
+                ) : (
+                  <TickersByDateTable tickersByDate={tickersByDate} />
+                )}
+              </Box>
             </Box>
           </Box>
         }/>
