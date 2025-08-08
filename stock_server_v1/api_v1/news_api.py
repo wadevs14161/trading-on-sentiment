@@ -24,7 +24,7 @@ all_articles = newsapi.get_everything(
     language='en',
     sort_by='publishedAt',  # Sort by newest first
     page_size=5,  # Limit to top 5 results
-    page=1
+    page=1,
 )
 
 # Check if articles were found
