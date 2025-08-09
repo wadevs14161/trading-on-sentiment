@@ -22,3 +22,7 @@ stock_server_v1/.db_credential.json
 *.pyc
 __pycache__/
 package-lock.json
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
