@@ -64,21 +64,47 @@ function App() {
       market_index: benchmark,
       indicator: indicator,
     }).then(data => {
+      console.log(`🔍 DATA STRUCTURE DEBUG for ${indicator}:`, {
+        totalItems: data.portfolio_returns?.length || 0,
+        firstItem: data.portfolio_returns ? data.portfolio_returns[0] : null,
+        dataKeys: data.portfolio_returns && data.portfolio_returns[0] ? Object.keys(data.portfolio_returns[0]) : []
+      });
+      
       // console.log('Portfolio returns data:', data);
       // Expecting: { portfolio_returns: Array, ... }
       let array: any[] = [];
       if (Array.isArray(data.portfolio_returns)) {
         array = data.portfolio_returns;
         // console.log('First 5 items from portfolio returns:', array.slice(0, 5));
+        
+        console.log(`🔍 ARRAY STRUCTURE DEBUG for ${indicator}:`, {
+          totalItems: array.length,
+          hasIndex: array[0]?.index !== undefined,
+          hasDate: array[0]?.Date !== undefined,
+          dateField: array[0]?.Date || array[0]?.date || array[0]?.index || 'none'
+        });
       } else {
         console.error('API did not return an array:', data);
         return;
       }
 
-      // Use 'index' as the date label
-      const labels = array.map((item: any) => item.index);
+      // Use 'Date' field as the date label (note: uppercase D in the data)
+      const labels = array.map((item: any) => item.Date || item.date || item.index);
       const portfolioReturnsArr = array.map((item: any) => item.portfolio_return);
       const marketIndexReturns = array.map((item: any) => item[benchmark]);
+
+      console.log(`📊 CHART DATA DEBUG for ${indicator}:`, {
+        labelsLength: labels.length,
+        portfolioReturnsLength: portfolioReturnsArr.length,
+        marketIndexReturnsLength: marketIndexReturns.length,
+        hasNullPortfolio: portfolioReturnsArr.some(v => v === null || v === undefined),
+        hasNaNPortfolio: portfolioReturnsArr.some(v => isNaN(v)),
+        hasNullMarket: marketIndexReturns.some(v => v === null || v === undefined),
+        hasNaNMarket: marketIndexReturns.some(v => isNaN(v)),
+        sampleLabels: labels.slice(0, 3),
+        samplePortfolio: portfolioReturnsArr.slice(0, 3),
+        sampleMarket: marketIndexReturns.slice(0, 3)
+      });
 
       // Find the highest return value in the portfolio returns and its corresponding date
       const highestReturnValue = Math.max(...portfolioReturnsArr);
@@ -94,12 +120,27 @@ function App() {
       setHighestReturn(highestReturnValue);
       setHighestReturnDate(highestReturnDateValue);
 
+      // Clean the data arrays to ensure no invalid values
+      const cleanPortfolioReturns = portfolioReturnsArr.map(val => 
+        (val === null || val === undefined || isNaN(val)) ? 0 : Number(val)
+      );
+      const cleanMarketReturns = marketIndexReturns.map(val => 
+        (val === null || val === undefined || isNaN(val)) ? 0 : Number(val)
+      );
+
+      console.log(`🧹 CLEANED DATA for ${indicator}:`, {
+        originalPortfolioHadBadValues: portfolioReturnsArr.length !== cleanPortfolioReturns.filter(v => v === portfolioReturnsArr[cleanPortfolioReturns.indexOf(v)]).length,
+        originalMarketHadBadValues: marketIndexReturns.length !== cleanMarketReturns.filter(v => v === marketIndexReturns[cleanMarketReturns.indexOf(v)]).length,
+        cleanPortfolioSample: cleanPortfolioReturns.slice(0, 3),
+        cleanMarketSample: cleanMarketReturns.slice(0, 3)
+      });
+
       setChartData({
         labels,
         datasets: [
           {
             label: 'Portfolio Return',
-            data: portfolioReturnsArr,
+            data: cleanPortfolioReturns,
             borderColor: '#20c997', // Teal color for portfolio
             backgroundColor: 'rgba(32, 201, 151, 0.1)',
             borderWidth: 3,
@@ -112,7 +153,7 @@ function App() {
           },
           {
             label: benchmark,
-            data: marketIndexReturns,
+            data: cleanMarketReturns,
             borderColor: '#6f42c1', // Purple color for benchmark
             backgroundColor: 'rgba(111, 66, 193, 0.1)',
             borderWidth: 3,
@@ -193,7 +234,12 @@ function App() {
 
                 {/* Chart */}
                 <Box sx={{ mb: 4 }}>
-                  <BenchmarkChart chartData={chartData} benchmark={benchmark} loading={loading} />
+                  <BenchmarkChart 
+                    key={`${indicator}-${benchmark}-${dateRange.start}-${dateRange.end}`}
+                    chartData={chartData} 
+                    benchmark={benchmark} 
+                    loading={loading} 
+                  />
                 </Box>
 
                 {/* Integrated Key Metrics */}

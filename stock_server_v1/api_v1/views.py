@@ -136,7 +136,7 @@ class PortfolioReturnsViewSet(viewsets.ViewSet):
         print(f"🔄 CALCULATING MISSING MONTHS: {len(missing_months)} months for {indicator}")
         
         # Load sentiment data
-        file = "reddit_sentiment_gemini_v3.csv"
+        file = "reddit_sentiment_data.csv"
         sentiment_data_path = os.path.join(settings.BASE_DIR, 'data', file)
         sentiment_data = RedditSentimentData(sentiment_data_path)
         
@@ -260,7 +260,7 @@ class PortfolioReturnsViewSet(viewsets.ViewSet):
                               status=status.HTTP_400_BAD_REQUEST)
             
             # Load sentiment data for stock list extraction
-            file = "reddit_sentiment_gemini_v3.csv"
+            file = "reddit_sentiment_data.csv"
             sentiment_data_path = os.path.join(settings.BASE_DIR, 'data', file)
             sentiment_data = RedditSentimentData(sentiment_data_path)
             
@@ -283,6 +283,16 @@ class PortfolioReturnsViewSet(viewsets.ViewSet):
             portfolio_returns = sentiment_data.get_portfolio_returns(
                 file_path_index, df_portfolio, market_index, start_date, end_date
             )
+            
+            # Debug: Check the portfolio_returns DataFrame structure
+            print(f"🔍 PORTFOLIO DATAFRAME DEBUG for {indicator}:")
+            print(f"  Shape: {portfolio_returns.shape}")
+            print(f"  Columns: {portfolio_returns.columns.tolist()}")
+            print(f"  Index name: {portfolio_returns.index.name}")
+            print(f"  First 3 rows:")
+            print(portfolio_returns.head(3))
+            print(f"  Has NaN values: {portfolio_returns.isnull().any().any()}")
+            print(f"  Data types: {portfolio_returns.dtypes.to_dict()}")
             
             # Convert portfolio index (date) to string
             portfolio_returns.index = portfolio_returns.index.strftime('%Y-%m-%d')
