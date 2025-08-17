@@ -24,7 +24,7 @@ const drawerWidth = 240; // Width of the sidebar drawer
 // Define a mapping from indicator value to label at the top of your file or inside the component
 const indicatorLabels: Record<string, string> = {
   engagement_ratio: 'Engagement Ratio',
-  total_sentiment: 'Sentiment',
+  total_sentiment: 'Total Sentiment',
   comms_num: 'Most Comments in Posts',
   score: 'Top Score in Posts'
 };

@@ -150,7 +150,7 @@ const Sidebar = ({
               }
             }}
           >
-            <MenuItem value="total_sentiment">Sentiment</MenuItem>
+            <MenuItem value="total_sentiment">Total Sentiment</MenuItem>
             <MenuItem value="score">Score of Posts</MenuItem>
             <MenuItem value="comms_num">Number of Comments of Posts</MenuItem>
             <MenuItem value="engagement_ratio">Engagement Ratio</MenuItem>
